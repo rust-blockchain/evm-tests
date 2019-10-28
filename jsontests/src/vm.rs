@@ -5,11 +5,10 @@ use primitive_types::{H160, H256, U256};
 use evm::gasometer;
 use evm::backend::{Backend, ApplyBackend, MemoryBackend, MemoryVicinity, MemoryAccount};
 use evm::executor::StackExecutor;
-use ethjson::vm::Vm;
 use crate::utils::*;
 
 #[derive(Deserialize, Debug)]
-pub struct Test(Vm);
+pub struct Test(ethjson::vm::Vm);
 
 impl Test {
 	pub fn unwrap_to_pre_state(&self) -> BTreeMap<H160, MemoryAccount> {

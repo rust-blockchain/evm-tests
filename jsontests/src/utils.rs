@@ -3,6 +3,9 @@ use std::collections::BTreeMap;
 use primitive_types::{U256, H256, H160};
 use evm::backend::MemoryAccount;
 
+pub const STACK_LIMIT: usize = 1024;
+pub const MEMORY_LIMIT: usize = 1000000000;
+
 pub fn u256_to_h256(u: U256) -> H256 {
 	let mut h = H256::default();
 	u.to_big_endian(&mut h[..]);
