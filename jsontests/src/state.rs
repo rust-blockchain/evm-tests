@@ -5,7 +5,7 @@ use primitive_types::{H160, H256, U256};
 use evm::{Handler, CreateScheme};
 use evm::gasometer::{self, Gasometer};
 use evm::executor::StackExecutor;
-use evm::backend::{Backend, MemoryAccount, MemoryVicinity, MemoryBackend};
+use evm::backend::{Backend, MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
 use crate::utils::*;
 
@@ -70,20 +70,17 @@ pub fn test(name: &str, test: Test) {
 						&gasometer_config,
 					);
 
-					let context = evm::Context {
-						address: to.clone().into(),
+					let _reason = executor.transact_call(
 						caller,
-						apparent_value: value,
-					};
-
-					executor.transfer(caller, to.clone().into(), value).unwrap();
-					executor.call(
 						to.clone().into(),
+						value,
 						data,
-						Some(transaction.gas_limit.into()),
-						false,
-						context,
-					).unwrap();
+						transaction.gas_limit.into()
+					);
+
+					let (_gas_left, values, logs) = executor.finalize();
+					backend.apply(values, logs);
+					assert_valid_hash(&state.hash.0, backend.state());
 				},
 				ethjson::maybe::MaybeEmpty::None => {
 					let code = data;
@@ -96,24 +93,16 @@ pub fn test(name: &str, test: Test) {
 						&gasometer_config,
 					);
 
-					let address = executor.create_address(
+					let _reason = executor.transact_create(
 						caller,
-						CreateScheme::Dynamic
-					).unwrap();
-
-					let context = evm::Context {
-						address,
-						caller,
-						apparent_value: value,
-					};
-
-					executor.transfer(caller, address, value).unwrap();
-					executor.create(
-						address,
+						value,
 						code,
-						Some(transaction.gas_limit.into()),
-						context,
-					).unwrap();
+						transaction.gas_limit.into()
+					);
+
+					let (_gas_left, values, logs) = executor.finalize();
+					backend.apply(values, logs);
+					assert_valid_hash(&state.hash.0, backend.state());
 				},
 			}
 		}

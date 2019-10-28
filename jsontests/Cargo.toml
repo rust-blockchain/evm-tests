@@ -17,3 +17,6 @@ hex = "0.4"
 clap = "2.32"
 ethjson = { git = "https://github.com/paritytech/parity-ethereum", features = ["test-helpers"] }
 parity-crypto = { version = "0.4.2", features = ["publickey"] }
+triehash-ethereum = { git = "https://github.com/paritytech/parity-ethereum" }
+rlp = "0.4"
+sha3 = "0.8"
