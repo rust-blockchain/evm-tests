@@ -75,12 +75,12 @@ pub fn test(name: &str, test: Test) {
 	let code = test.unwrap_to_code();
 	let data = test.unwrap_to_data();
 	let context = test.unwrap_to_context();
-	let mut runtime = evm::Runtime::new(code, data, 1024, 1000000, context);
+	let mut runtime = evm::Runtime::new(code, data, context, &config);
 
 	let reason = executor.execute(&mut runtime);
 	let gas = executor.gas();
 	let (values, logs) = executor.deconstruct();
-	backend.apply(values, logs);
+	backend.apply(values, logs, false);
 
 	if test.0.output.is_none() {
 		print!("{:?} ", reason);

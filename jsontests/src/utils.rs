@@ -104,7 +104,13 @@ pub fn assert_valid_state(a: &ethjson::spec::State, b: &BTreeMap<H160, MemoryAcc
 
 pub fn assert_valid_hash(h: &H256, b: &BTreeMap<H160, MemoryAccount>) {
 	let tree = b.iter().map(|(address, account)| {
-		let storage_root = triehash_ethereum::sec_trie_root(&account.storage);
+		let storage_root = triehash_ethereum::sec_trie_root(
+			account.storage
+				.iter()
+				.map(|(k, v)| {
+					(k, rlp::encode(&U256::from_big_endian(&v[..])))
+				})
+		);
 		let code_hash = H256::from_slice(Keccak256::digest(&account.code).as_slice());
 
 		let account = TrieAccount {
@@ -119,7 +125,12 @@ pub fn assert_valid_hash(h: &H256, b: &BTreeMap<H160, MemoryAccount>) {
 	}).collect::<Vec<_>>();
 
 	let root = triehash_ethereum::sec_trie_root(tree);
-	assert_eq!(root, h.clone().into());
+	let expect = h.clone().into();
+
+	if root != expect {
+		panic!("Hash not equal; calculated: {:?}, expect: {:?}\nState: {:?}",
+			   root, expect, b);
+	}
 }
 
 pub fn flush() {

@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
-use evm::Config;
+use evm::{Config, ExitSucceed, ExitError};
 use evm::executor::StackExecutor;
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
@@ -39,11 +40,46 @@ impl Test {
 	}
 }
 
+fn istanbul_precompile(
+	address: H160,
+	input: &[u8],
+	target_gas: Option<usize>
+) -> Option<Result<(ExitSucceed, Vec<u8>, usize), ExitError>> {
+	use ethcore_builtin::*;
+	use parity_bytes::BytesRef;
+
+	let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::Builtin> = serde_json::from_str(include_str!("../res/istanbul_builtins.json")).unwrap();
+	let builtins = builtins.into_iter().map(|(address, builtin)| {
+		(address.into(), builtin.try_into().unwrap())
+	}).collect::<BTreeMap<H160, Builtin>>();
+
+	if let Some(builtin) = builtins.get(&address) {
+		let cost = builtin.cost(input, 0);
+
+		if let Some(target_gas) = target_gas {
+			if cost > U256::from(usize::max_value()) || target_gas < cost.as_usize() {
+				return Some(Err(ExitError::OutOfGas))
+			}
+		}
+
+		let mut output = Vec::new();
+		match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
+			Ok(()) => Some(Ok((ExitSucceed::Stopped, output, cost.as_usize()))),
+			Err(e) => Some(Err(ExitError::Other(e))),
+		}
+	} else {
+		None
+	}
+}
+
 pub fn test(name: &str, test: Test) {
 	for (spec, states) in &test.0.post_states {
-		let gasometer_config = match spec {
-			ethjson::spec::ForkSpec::Istanbul => Config::istanbul(),
-			_ => unimplemented!(),
+		let (gasometer_config, precompile, delete_empty) = match spec {
+			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), istanbul_precompile, true),
+			spec => {
+				println!("Skip spec {:?}", spec);
+				continue
+			},
 		};
 
 		let original_state = test.unwrap_to_pre_state();
@@ -55,58 +91,47 @@ pub fn test(name: &str, test: Test) {
 			flush();
 
 			let transaction = test.0.transaction.select(&state.indexes);
-
+			let gas_limit: usize = transaction.gas_limit.into();
 			let data: Vec<u8> = transaction.data.into();
+
+			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
+			let mut executor = StackExecutor::new_with_precompile(
+				&backend,
+				transaction.gas_limit.into(),
+				&gasometer_config,
+				precompile,
+			);
 
 			match transaction.to {
 				ethjson::maybe::MaybeEmpty::Some(to) => {
 					let data = data;
 					let value = transaction.value.into();
 
-					let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
-					let mut executor = StackExecutor::new(
-						&backend,
-						transaction.gas_limit.into(),
-						&gasometer_config,
-					);
-
 					let _reason = executor.transact_call(
 						caller,
 						to.clone().into(),
 						value,
 						data,
-						transaction.gas_limit.into()
+						gas_limit
 					);
-
-					executor.pay_fee(caller, vicinity.block_coinbase, vicinity.gas_price).unwrap();
-					let (values, logs) = executor.deconstruct();
-					backend.apply(values, logs);
-					assert_valid_hash(&state.hash.0, backend.state());
 				},
 				ethjson::maybe::MaybeEmpty::None => {
 					let code = data;
 					let value = transaction.value.into();
 
-					let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
-					let mut executor = StackExecutor::new(
-						&backend,
-						transaction.gas_limit.into(),
-						&gasometer_config,
-					);
-
 					let _reason = executor.transact_create(
 						caller,
 						value,
 						code,
-						transaction.gas_limit.into()
+						gas_limit
 					);
-
-					executor.pay_fee(caller, vicinity.block_coinbase, vicinity.gas_price).unwrap();
-					let (values, logs) = executor.deconstruct();
-					backend.apply(values, logs);
-					assert_valid_hash(&state.hash.0, backend.state());
 				},
 			}
+
+			executor.pay_fee(caller, vicinity.block_coinbase, vicinity.gas_price).unwrap();
+			let (values, logs) = executor.deconstruct();
+			backend.apply(values, logs, delete_empty);
+			assert_valid_hash(&state.hash.0, backend.state());
 
 			println!("passed");
 		}

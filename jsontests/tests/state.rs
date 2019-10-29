@@ -24,4 +24,10 @@ pub fn run(dir: &str) {
 	}
 }
 
+#[test] fn st_args_zero_one_balance() { run("res/ethtests/GeneralStateTests/stArgsZeroOneBalance"); }
+#[test] fn st_sload() { run("res/ethtests/GeneralStateTests/stSLoadTest"); }
+#[test] fn st_bugs() { run("res/ethtests/GeneralStateTests/stBugs") }
 #[test] fn st_bad_opcode() { run("res/ethtests/GeneralStateTests/stBadOpcode"); }
+#[test] fn st_zero_calls_revert() { run("res/ethtests/GeneralStateTests/stZeroCallsRevert"); }
+#[test] fn st_zero_knowledge() { run("res/ethtests/GeneralStateTests/stZeroKnowledge"); }
+#[test] fn st_zero_knowledge2() { run("res/ethtests/GeneralStateTests/stZeroKnowledge2"); }
