@@ -1,11 +1,9 @@
-use std::collections::{HashMap, BTreeMap};
-use std::rc::Rc;
+use std::collections::BTreeMap;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
-use evm::{Handler, CreateScheme};
-use evm::gasometer::{self, Gasometer};
+use evm::Config;
 use evm::executor::StackExecutor;
-use evm::backend::{Backend, MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
+use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
 use crate::utils::*;
 
@@ -36,16 +34,15 @@ impl Test {
 			block_timestamp: self.0.env.timestamp.clone().into(),
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
+			chain_id: U256::zero(),
 		}
 	}
 }
 
 pub fn test(name: &str, test: Test) {
-	use std::io::{self, Write};
-
 	for (spec, states) in &test.0.post_states {
 		let gasometer_config = match spec {
-			ethjson::spec::ForkSpec::Istanbul => gasometer::Config::frontier(),
+			ethjson::spec::ForkSpec::Istanbul => Config::istanbul(),
 			_ => unimplemented!(),
 		};
 
@@ -54,6 +51,9 @@ pub fn test(name: &str, test: Test) {
 		let caller = test.unwrap_caller();
 
 		for (i, state) in states.iter().enumerate() {
+			print!("Running {}:{:?}:{} ... ", name, spec, i);
+			flush();
+
 			let transaction = test.0.transaction.select(&state.indexes);
 
 			let data: Vec<u8> = transaction.data.into();
@@ -78,7 +78,8 @@ pub fn test(name: &str, test: Test) {
 						transaction.gas_limit.into()
 					);
 
-					let (_gas_left, values, logs) = executor.finalize();
+					executor.pay_fee(caller, vicinity.block_coinbase, vicinity.gas_price).unwrap();
+					let (values, logs) = executor.deconstruct();
 					backend.apply(values, logs);
 					assert_valid_hash(&state.hash.0, backend.state());
 				},
@@ -100,13 +101,14 @@ pub fn test(name: &str, test: Test) {
 						transaction.gas_limit.into()
 					);
 
-					let (_gas_left, values, logs) = executor.finalize();
+					executor.pay_fee(caller, vicinity.block_coinbase, vicinity.gas_price).unwrap();
+					let (values, logs) = executor.deconstruct();
 					backend.apply(values, logs);
 					assert_valid_hash(&state.hash.0, backend.state());
 				},
 			}
-		}
 
-		println!("vicinity: {:?}", vicinity);
+			println!("passed");
+		}
 	}
 }

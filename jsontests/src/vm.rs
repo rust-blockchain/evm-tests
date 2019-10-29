@@ -1,9 +1,9 @@
-use std::collections::{HashMap, BTreeMap};
+use std::collections::BTreeMap;
 use std::rc::Rc;
-use serde::{Serialize, Deserialize};
-use primitive_types::{H160, H256, U256};
-use evm::gasometer;
-use evm::backend::{Backend, ApplyBackend, MemoryBackend, MemoryVicinity, MemoryAccount};
+use serde::Deserialize;
+use primitive_types::{H160, U256};
+use evm::Config;
+use evm::backend::{ApplyBackend, MemoryBackend, MemoryVicinity, MemoryAccount};
 use evm::executor::StackExecutor;
 use crate::utils::*;
 
@@ -25,6 +25,7 @@ impl Test {
 			block_timestamp: self.0.env.timestamp.clone().into(),
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
+			chain_id: U256::zero(),
 		}
 	}
 
@@ -58,19 +59,17 @@ impl Test {
 }
 
 pub fn test(name: &str, test: Test) {
-	use std::io::{self, Write};
-
 	print!("Running test {} ... ", name);
-	io::stdout().flush().ok().expect("Could not flush stdout");
+	flush();
 
 	let original_state = test.unwrap_to_pre_state();
 	let vicinity = test.unwrap_to_vicinity();
-	let gasometer_config = gasometer::Config::frontier();
+	let config = Config::frontier();
 	let mut backend = MemoryBackend::new(&vicinity, original_state);
 	let mut executor = StackExecutor::new(
 		&backend,
 		test.unwrap_to_gas_limit(),
-		&gasometer_config,
+		&config,
 	);
 
 	let code = test.unwrap_to_code();
@@ -79,7 +78,8 @@ pub fn test(name: &str, test: Test) {
 	let mut runtime = evm::Runtime::new(code, data, 1024, 1000000, context);
 
 	let reason = executor.execute(&mut runtime);
-	let (gas, values, logs) = executor.finalize();
+	let gas = executor.gas();
+	let (values, logs) = executor.deconstruct();
 	backend.apply(values, logs);
 
 	if test.0.output.is_none() {
