@@ -73,6 +73,22 @@ fn istanbul_precompile(
 }
 
 pub fn test(name: &str, test: Test) {
+	use std::thread;
+
+	const STACK_SIZE: usize = 16 * 1024 * 1024;
+
+	let name = name.to_string();
+	// Spawn thread with explicit stack size
+	let child = thread::Builder::new()
+		.stack_size(STACK_SIZE)
+		.spawn(move || test_run(&name, test))
+		.unwrap();
+
+	// Wait for thread to join
+	child.join().unwrap();
+}
+
+pub fn test_run(name: &str, test: Test) {
 	for (spec, states) in &test.0.post_states {
 		let (gasometer_config, precompile, delete_empty) = match spec {
 			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), istanbul_precompile, true),
