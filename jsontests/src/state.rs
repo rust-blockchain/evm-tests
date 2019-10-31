@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
-use evm::{Config, ExitSucceed, ExitError};
+use evm::{Config, ExitSucceed, ExitError, Transfer, Handler};
 use evm::executor::StackExecutor;
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
@@ -35,7 +35,7 @@ impl Test {
 			block_timestamp: self.0.env.timestamp.clone().into(),
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
-			chain_id: U256::zero(),
+			chain_id: U256::one(),
 		}
 	}
 }
@@ -117,6 +117,9 @@ pub fn test_run(name: &str, test: Test) {
 				&gasometer_config,
 				precompile,
 			);
+			let total_fee = vicinity.gas_price * gas_limit;
+
+			executor.withdraw(caller, total_fee).unwrap();
 
 			match transaction.to {
 				ethjson::maybe::MaybeEmpty::Some(to) => {
@@ -144,7 +147,9 @@ pub fn test_run(name: &str, test: Test) {
 				},
 			}
 
-			executor.pay_fee(caller, vicinity.block_coinbase, vicinity.gas_price).unwrap();
+			let actual_fee = executor.fee(vicinity.gas_price);
+			executor.deposit(vicinity.block_coinbase, actual_fee);
+			executor.deposit(caller, total_fee - actual_fee);
 			let (values, logs) = executor.deconstruct();
 			backend.apply(values, logs, delete_empty);
 			assert_valid_hash(&state.hash.0, backend.state());

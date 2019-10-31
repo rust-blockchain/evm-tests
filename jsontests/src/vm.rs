@@ -85,7 +85,7 @@ pub fn test(name: &str, test: Test) {
 	if test.0.output.is_none() {
 		print!("{:?} ", reason);
 
-		assert!(reason.is_err());
+		assert!(!reason.is_succeed());
 		assert!(test.0.post_state.is_none() && test.0.gas_left.is_none());
 
 		println!("succeed");
