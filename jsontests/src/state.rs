@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
-use evm::{Config, ExitSucceed, ExitError, Transfer, Handler};
+use evm::{Config, ExitSucceed, ExitError};
 use evm::executor::StackExecutor;
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
@@ -48,9 +48,9 @@ fn istanbul_precompile(
 	use ethcore_builtin::*;
 	use parity_bytes::BytesRef;
 
-	let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::Builtin> = serde_json::from_str(include_str!("../res/istanbul_builtins.json")).unwrap();
+	let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> = serde_json::from_str(include_str!("../res/istanbul_builtins.json")).unwrap();
 	let builtins = builtins.into_iter().map(|(address, builtin)| {
-		(address.into(), builtin.try_into().unwrap())
+		(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
 	}).collect::<BTreeMap<H160, Builtin>>();
 
 	if let Some(builtin) = builtins.get(&address) {
@@ -65,7 +65,7 @@ fn istanbul_precompile(
 		let mut output = Vec::new();
 		match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
 			Ok(()) => Some(Ok((ExitSucceed::Stopped, output, cost.as_usize()))),
-			Err(e) => Some(Err(ExitError::Other(e))),
+			Err(e) => Some(Err(ExitError::Other(e.into()))),
 		}
 	} else {
 		None
