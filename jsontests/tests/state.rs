@@ -44,7 +44,7 @@ pub fn run(dir: &str) {
 #[test] fn st_changed_eip150() { run("res/ethtests/GeneralStateTests/stChangedEIP150") }
 #[test] fn st_code_copy() { run("res/ethtests/GeneralStateTests/stCodeCopyTest") }
 #[test] fn st_code_size_limit() { run("res/ethtests/GeneralStateTests/stCodeSizeLimit") }
-#[test] fn st_create2() { run("res/ethtests/GeneralStateTests/stCreate2") }
+#[test] #[ignore] fn st_create2() { run("res/ethtests/GeneralStateTests/stCreate2") }
 #[test] fn st_create() { run("res/ethtests/GeneralStateTests/stCreateTest") }
 #[test] fn st_delegate_call_homestead() { run("res/ethtests/GeneralStateTests/stDelegatecallTestHomestead") }
 #[test] fn st_eip150_single_code_gas_prices() { run("res/ethtests/GeneralStateTests/stEIP150singleCodeGasPrices") }
