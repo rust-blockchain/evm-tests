@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use evm_jsontests::vm as vmtests;
 
 pub fn run(dir: &str) {
+	let _ = env_logger::try_init();
+
 	let mut dest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 	dest.push(dir);
 
