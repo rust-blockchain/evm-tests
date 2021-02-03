@@ -4,7 +4,7 @@ use serde::Deserialize;
 use primitive_types::{H160, U256};
 use evm::Config;
 use evm::backend::{ApplyBackend, MemoryBackend, MemoryVicinity, MemoryAccount};
-use evm::executor::StackExecutor;
+use evm::executor::{StackExecutor, StackSubstateMetadata, MemoryStackState};
 use crate::utils::*;
 
 #[derive(Deserialize, Debug)]
@@ -66,11 +66,9 @@ pub fn test(name: &str, test: Test) {
 	let vicinity = test.unwrap_to_vicinity();
 	let config = Config::frontier();
 	let mut backend = MemoryBackend::new(&vicinity, original_state);
-	let mut executor = StackExecutor::new(
-		&backend,
-		test.unwrap_to_gas_limit(),
-		&config,
-	);
+	let metadata = StackSubstateMetadata::new(test.unwrap_to_gas_limit(), &config);
+	let state = MemoryStackState::new(metadata, &backend);
+	let mut executor = StackExecutor::new(state, &config);
 
 	let code = test.unwrap_to_code();
 	let data = test.unwrap_to_data();

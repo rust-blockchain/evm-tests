@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
 use evm::{Config, ExitSucceed, ExitError};
-use evm::executor::StackExecutor;
+use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata};
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
 use crate::utils::*;
@@ -112,9 +112,10 @@ pub fn test_run(name: &str, test: Test) {
 			let data: Vec<u8> = transaction.data.into();
 
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
+			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
+			let executor_state = MemoryStackState::new(metadata, &backend);
 			let mut executor = StackExecutor::new_with_precompile(
-				&backend,
-				transaction.gas_limit.into(),
+				executor_state,
 				&gasometer_config,
 				precompile,
 			);
