@@ -29,7 +29,7 @@ use std::{
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 use ethereum_types::{H256, U256};
-use parity_crypto::publickey::{recover_allowing_all_zero_message, Signature, ZeroesAllowedMessage};
+use parity_crypto::publickey::{recover, Signature};
 use keccak_hash::keccak;
 use log::{warn, trace};
 use num::{BigUint, Zero, One};
@@ -654,8 +654,8 @@ impl Implementation for EcRecover {
 			// `rust-secp256k1` and this is a workaround for that. It is not an
 			// openethereum-level error to fail here; instead we return all
 			// zeroes and let the caller interpret that outcome.
-			let recovery_message = ZeroesAllowedMessage(hash);
-			if let Ok(p) = recover_allowing_all_zero_message(&s, recovery_message) {
+			let recovery_message = hash;
+			if let Ok(p) = recover(&s, &recovery_message) {
 				let r = keccak(p);
 				output.write(0, &[0; 12]);
 				output.write(12, &r.as_bytes()[12..]);

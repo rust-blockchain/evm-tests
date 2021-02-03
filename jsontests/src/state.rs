@@ -43,8 +43,9 @@ impl Test {
 fn istanbul_precompile(
 	address: H160,
 	input: &[u8],
-	target_gas: Option<usize>
-) -> Option<Result<(ExitSucceed, Vec<u8>, usize), ExitError>> {
+	target_gas: Option<u64>,
+	_context: &evm::Context,
+) -> Option<Result<(ExitSucceed, Vec<u8>, u64), ExitError>> {
 	use ethcore_builtin::*;
 	use parity_bytes::BytesRef;
 
@@ -57,14 +58,14 @@ fn istanbul_precompile(
 		let cost = builtin.cost(input, 0);
 
 		if let Some(target_gas) = target_gas {
-			if cost > U256::from(usize::max_value()) || target_gas < cost.as_usize() {
+			if cost > U256::from(u64::max_value()) || target_gas < cost.as_u64() {
 				return Some(Err(ExitError::OutOfGas))
 			}
 		}
 
 		let mut output = Vec::new();
 		match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
-			Ok(()) => Some(Ok((ExitSucceed::Stopped, output, cost.as_usize()))),
+			Ok(()) => Some(Ok((ExitSucceed::Stopped, output, cost.as_u64()))),
 			Err(e) => Some(Err(ExitError::Other(e.into()))),
 		}
 	} else {
@@ -107,7 +108,7 @@ pub fn test_run(name: &str, test: Test) {
 			flush();
 
 			let transaction = test.0.transaction.select(&state.indexes);
-			let gas_limit: usize = transaction.gas_limit.into();
+			let gas_limit: u64 = transaction.gas_limit.into();
 			let data: Vec<u8> = transaction.data.into();
 
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
@@ -119,7 +120,7 @@ pub fn test_run(name: &str, test: Test) {
 			);
 			let total_fee = vicinity.gas_price * gas_limit;
 
-			executor.withdraw(caller, total_fee).unwrap();
+			executor.substate_mut().withdraw(caller, total_fee, &backend).unwrap();
 
 			match transaction.to {
 				ethjson::maybe::MaybeEmpty::Some(to) => {
@@ -148,8 +149,8 @@ pub fn test_run(name: &str, test: Test) {
 			}
 
 			let actual_fee = executor.fee(vicinity.gas_price);
-			executor.deposit(vicinity.block_coinbase, actual_fee);
-			executor.deposit(caller, total_fee - actual_fee);
+			executor.substate_mut().deposit(vicinity.block_coinbase, actual_fee, &backend);
+			executor.substate_mut().deposit(caller, total_fee - actual_fee, &backend);
 			let (values, logs) = executor.deconstruct();
 			backend.apply(values, logs, delete_empty);
 			assert_valid_hash(&state.hash.0, backend.state());

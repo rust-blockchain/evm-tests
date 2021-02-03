@@ -49,11 +49,11 @@ impl Test {
 		self.0.output.clone().unwrap().into()
 	}
 
-	pub fn unwrap_to_gas_limit(&self) -> usize {
+	pub fn unwrap_to_gas_limit(&self) -> u64 {
 		self.0.transaction.gas.clone().into()
 	}
 
-	pub fn unwrap_to_post_gas(&self) -> usize {
+	pub fn unwrap_to_post_gas(&self) -> u64 {
 		self.0.gas_left.clone().unwrap().into()
 	}
 }
