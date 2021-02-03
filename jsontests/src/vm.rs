@@ -79,7 +79,7 @@ pub fn test(name: &str, test: Test) {
 
 	let reason = executor.execute(&mut runtime);
 	let gas = executor.gas();
-	let (values, logs) = executor.deconstruct();
+	let (values, logs) = executor.into_state().deconstruct();
 	backend.apply(values, logs, false);
 
 	if test.0.output.is_none() {

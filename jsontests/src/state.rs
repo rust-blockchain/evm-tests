@@ -120,7 +120,7 @@ pub fn test_run(name: &str, test: Test) {
 			);
 			let total_fee = vicinity.gas_price * gas_limit;
 
-			executor.substate_mut().withdraw(caller, total_fee, &backend).unwrap();
+			executor.state_mut().withdraw(caller, total_fee).unwrap();
 
 			match transaction.to {
 				ethjson::maybe::MaybeEmpty::Some(to) => {
@@ -149,9 +149,9 @@ pub fn test_run(name: &str, test: Test) {
 			}
 
 			let actual_fee = executor.fee(vicinity.gas_price);
-			executor.substate_mut().deposit(vicinity.block_coinbase, actual_fee, &backend);
-			executor.substate_mut().deposit(caller, total_fee - actual_fee, &backend);
-			let (values, logs) = executor.deconstruct();
+			executor.state_mut().deposit(vicinity.block_coinbase, actual_fee);
+			executor.state_mut().deposit(caller, total_fee - actual_fee);
+			let (values, logs) = executor.into_state().deconstruct();
 			backend.apply(values, logs, delete_empty);
 			assert_valid_hash(&state.hash.0, backend.state());
 
