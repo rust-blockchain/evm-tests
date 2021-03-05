@@ -101,7 +101,7 @@ pub fn test(name: &str, test: Test) {
 
 pub fn test_run(name: &str, test: Test) {
     for (spec, states) in &test.0.post_states {
-        let (gasometer_config, precompile, delete_empty) = match spec {
+        let (gasometer_config, mut precompile, delete_empty) = match spec {
             ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), istanbul_precompile, true),
             spec => {
                 println!("Skip spec {:?}", spec);
@@ -113,48 +113,114 @@ pub fn test_run(name: &str, test: Test) {
         let vicinity = test.unwrap_to_vicinity();
         let caller = test.unwrap_caller();
 
+        let evm_state = evm_state::EvmState::default();
+
         for (i, state) in states.iter().enumerate() {
             print!("Running {}:{:?}:{} ... ", name, spec, i);
             flush();
 
             let transaction = test.0.transaction.select(&state.indexes);
             let gas_limit: u64 = transaction.gas_limit.into();
-            let data: Vec<u8> = transaction.data.into();
 
-            let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
-            let metadata =
-                StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
-            let executor_state = MemoryStackState::new(metadata, &backend);
-            let mut executor =
-                StackExecutor::new_with_precompile(executor_state, &gasometer_config, precompile);
-            let total_fee = vicinity.gas_price * gas_limit;
+            fn execute_tx<'cfg, 'pre, S: evm::executor::StackState<'cfg>>(
+                executor: &mut StackExecutor<'cfg, 'pre, S>,
+                caller: H160,
+                transaction: ethjson::transaction::Transaction,
+            ) {
+                let gas_limit: u64 = transaction.gas_limit.into();
+                let data: Vec<u8> = transaction.data.into();
 
-            executor.state_mut().withdraw(caller, total_fee).unwrap();
+                match transaction.to {
+                    ethjson::maybe::MaybeEmpty::Some(to) => {
+                        let data = data;
+                        let value = transaction.value.into();
 
-            match transaction.to {
-                ethjson::maybe::MaybeEmpty::Some(to) => {
-                    let data = data;
-                    let value = transaction.value.into();
+                        let _reason = executor.transact_call(
+                            caller,
+                            to.clone().into(),
+                            value,
+                            data,
+                            gas_limit,
+                        );
+                    }
+                    ethjson::maybe::MaybeEmpty::None => {
+                        let code = data;
+                        let value = transaction.value.into();
 
-                    let _reason =
-                        executor.transact_call(caller, to.clone().into(), value, data, gas_limit);
+                        let _reason = executor.transact_create(caller, value, code, gas_limit);
+                    }
                 }
-                ethjson::maybe::MaybeEmpty::None => {
-                    let code = data;
-                    let value = transaction.value.into();
+            };
 
-                    let _reason = executor.transact_create(caller, value, code, gas_limit);
-                }
-            }
+            // In-memory EVM executor
+            let expected_state_root = {
+                let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
+                let metadata = StackSubstateMetadata::new(gas_limit, &gasometer_config);
+                let executor_state = MemoryStackState::new(metadata, &backend);
 
-            let actual_fee = executor.fee(vicinity.gas_price);
-            executor
-                .state_mut()
-                .deposit(vicinity.block_coinbase, actual_fee);
-            executor.state_mut().deposit(caller, total_fee - actual_fee);
-            let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, delete_empty);
-            assert_valid_hash(&state.hash.0, backend.state());
+                let mut executor = StackExecutor::new_with_precompile(
+                    executor_state,
+                    &gasometer_config,
+                    &mut precompile,
+                );
+
+                let total_fee = vicinity.gas_price * gas_limit;
+                executor.state_mut().withdraw(caller, total_fee).unwrap();
+
+                execute_tx(&mut executor, caller, transaction.clone());
+
+                let actual_fee = executor.fee(vicinity.gas_price);
+                executor
+                    .state_mut()
+                    .deposit(vicinity.block_coinbase, actual_fee);
+                executor.state_mut().deposit(caller, total_fee - actual_fee);
+
+                let (values, logs) = executor.into_state().deconstruct();
+                backend.apply(values, logs, delete_empty);
+
+                let state_root_hash = state.hash.0;
+                assert_valid_hash(&state_root_hash, backend.state());
+
+                state_root_hash
+            };
+
+            // State-based EVM executor
+            let actual_state_root = {
+                let mut evm_state = evm_state.clone();
+                evm_state.set_initial(original_state.clone());
+                evm_state.apply();
+
+                let mut backend =
+                    evm_state::EvmBackend::new_from_state(evm_state, vicinity.clone());
+                let metadata = StackSubstateMetadata::new(gas_limit, &gasometer_config);
+                let executor_state = MemoryStackState::new(metadata, &backend);
+
+                let mut executor = StackExecutor::new_with_precompile(
+                    executor_state,
+                    &gasometer_config,
+                    &mut precompile,
+                );
+
+                let total_fee = vicinity.gas_price * gas_limit;
+                executor.state_mut().withdraw(caller, total_fee).unwrap();
+
+                execute_tx(&mut executor, caller, transaction);
+
+                let actual_fee = executor.fee(vicinity.gas_price);
+                executor
+                    .state_mut()
+                    .deposit(vicinity.block_coinbase, actual_fee);
+                executor.state_mut().deposit(caller, total_fee - actual_fee);
+
+                let (values, _logs) = executor.into_state().deconstruct();
+                backend.apply(values, delete_empty);
+                let mut evm_state = backend.into_state();
+                evm_state.apply();
+
+                evm_state.root
+            };
+
+            assert_eq!(expected_state_root, actual_state_root);
 
             println!("passed");
         }

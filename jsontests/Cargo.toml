@@ -9,7 +9,10 @@ keywords = ["no_std", "ethereum"]
 edition = "2018"
 
 [dependencies]
-evm = { path = "../evm" }
+# evm = { path = "../evm" }
+evm = { git = "https://github.com/velas/evm", branch = "precompiles-closure" }
+evm-state = { path = "../../velas-chain/evm-utils/evm-state" }
+
 primitive-types = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
