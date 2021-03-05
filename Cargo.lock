@@ -791,7 +791,7 @@ dependencies = [
  "snafu",
  "tempfile",
  "thiserror",
- "triedb 0.5.0 (git+https://github.com/velas/triedb.git?branch=chore/bump-deps)",
+ "triedb",
 ]
 
 [[package]]
@@ -2071,16 +2071,6 @@ dependencies = [
 [[package]]
 name = "triedb"
 version = "0.5.0"
-dependencies = [
- "primitive-types",
- "rlp 0.5.0",
- "sha3 0.9.1",
- "thiserror",
-]
-
-[[package]]
-name = "triedb"
-version = "0.5.0"
 source = "git+https://github.com/velas/triedb.git?branch=chore/bump-deps#997b0734426c6fcaa235697670b5c8937cc882dc"
 dependencies = [
  "primitive-types",
@@ -2106,7 +2096,6 @@ version = "0.2.0"
 dependencies = [
  "ethereum-types",
  "keccak-hasher",
- "triedb 0.5.0",
  "triehash",
 ]
 

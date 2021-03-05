@@ -9,7 +9,6 @@ keywords = ["no_std", "ethereum"]
 edition = "2018"
 
 [dependencies]
-# evm = { path = "../evm" }
 evm = { git = "https://github.com/velas/evm", branch = "precompiles-closure" }
 evm-state = { path = "../../velas-chain/evm-utils/evm-state" }
 

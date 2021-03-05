@@ -23,9 +23,6 @@ extern crate triehash;
 use ethereum_types::H256;
 use keccak_hasher::KeccakHasher;
 
-extern crate triedb;
-use triedb::{MemoryTrieMut, SecureTrieMut, TrieMut};
-
 /// Generates a trie root hash for a vector of key-value tuples
 pub fn trie_root<I, K, V>(input: I) -> H256
 where
@@ -33,11 +30,7 @@ where
     K: AsRef<[u8]> + Ord,
     V: AsRef<[u8]>,
 {
-    let mut trie = MemoryTrieMut::default();
-    for (key, value) in input {
-        trie.insert(key.as_ref(), value.as_ref());
-    }
-    trie.root()
+    triehash::trie_root::<KeccakHasher, _, _, _>(input)
 }
 
 /// Generates a key-hashed (secure) trie root hash for a vector of key-value tuples.
@@ -47,11 +40,7 @@ where
     K: AsRef<[u8]>,
     V: AsRef<[u8]>,
 {
-    let mut trie = SecureTrieMut::new(MemoryTrieMut::default());
-    for (key, value) in input {
-        trie.insert(&key, value.as_ref());
-    }
-    trie.root()
+    triehash::sec_trie_root::<KeccakHasher, _, _, _>(input)
 }
 
 /// Generates a trie root hash for a vector of values
