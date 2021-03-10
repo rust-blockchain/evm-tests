@@ -188,7 +188,7 @@ pub fn test_run(name: &str, test: Test) {
             let actual_state_root = {
                 let mut evm_state = evm_state.clone();
                 evm_state.set_initial(original_state.clone());
-                evm_state.apply();
+                evm_state.commit();
 
                 let mut backend =
                     evm_state::EvmBackend::new_from_state(evm_state, vicinity.clone());
@@ -215,7 +215,7 @@ pub fn test_run(name: &str, test: Test) {
                 let (values, _logs) = executor.into_state().deconstruct();
                 backend.apply(values, delete_empty);
                 let mut evm_state = backend.into_state();
-                evm_state.apply();
+                evm_state.commit();
 
                 evm_state.root
             };
