@@ -22,10 +22,10 @@ pub mod bytes;
 pub mod hash;
 pub mod maybe;
 pub mod spec;
+pub mod state;
+pub mod transaction;
 pub mod uint;
 pub mod vm;
-pub mod transaction;
-pub mod state;
 
 #[cfg(any(test, feature = "test-helpers"))]
 pub mod test_helpers;

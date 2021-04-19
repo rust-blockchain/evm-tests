@@ -18,24 +18,24 @@
 
 #![warn(missing_docs)]
 
-use hash_db::Hasher;
 use ethereum_types::H256;
-use tiny_keccak::Keccak;
+use hash_db::Hasher;
 use plain_hasher::PlainHasher;
+use tiny_keccak::Keccak;
 
 /// Concrete `Hasher` impl for the Keccak-256 hash
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct KeccakHasher;
 impl Hasher for KeccakHasher {
-	type Out = H256;
-	type StdHasher = PlainHasher;
-	const LENGTH: usize = 32;
-	fn hash(x: &[u8]) -> Self::Out {
-		use tiny_keccak::Hasher;
-		let mut out = [0; 32];
-		let mut keccak256 = Keccak::v256();
-		keccak256.update(x);
-		keccak256.finalize(&mut out);
-		out.into()
-	}
+    type Out = H256;
+    type StdHasher = PlainHasher;
+    const LENGTH: usize = 32;
+    fn hash(x: &[u8]) -> Self::Out {
+        use tiny_keccak::Hasher;
+        let mut out = [0; 32];
+        let mut keccak256 = Keccak::v256();
+        keccak256.update(x);
+        keccak256.finalize(&mut out);
+        out.into()
+    }
 }

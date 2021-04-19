@@ -53,6 +53,7 @@ where
 }
 
 #[cfg(test)]
+#[rustfmt::skip]
 mod tests {
 	use super::{trie_root, sec_trie_root, ordered_trie_root, H256};
     use triehash;
