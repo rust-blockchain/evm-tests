@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
 use evm::{Config, ExitSucceed, ExitError};
-use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata};
+use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput};
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
 use crate::utils::*;
@@ -45,7 +45,7 @@ fn istanbul_precompile(
 	input: &[u8],
 	target_gas: Option<u64>,
 	_context: &evm::Context,
-) -> Option<Result<(ExitSucceed, Vec<u8>, u64), ExitError>> {
+) -> Option<Result<PrecompileOutput, ExitError>> {
 	use ethcore_builtin::*;
 	use parity_bytes::BytesRef;
 
@@ -65,7 +65,12 @@ fn istanbul_precompile(
 
 		let mut output = Vec::new();
 		match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
-			Ok(()) => Some(Ok((ExitSucceed::Stopped, output, cost.as_u64()))),
+			Ok(()) => Some(Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Stopped,
+				output,
+				cost: cost.as_u64(),
+				logs: Vec::new(),
+			})),
 			Err(e) => Some(Err(ExitError::Other(e.into()))),
 		}
 	} else {
