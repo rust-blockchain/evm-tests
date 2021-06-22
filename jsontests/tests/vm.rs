@@ -26,15 +26,15 @@ pub fn run(dir: &str) {
 	}
 }
 
-#[test] fn vm_arithmetic() { run("res/ethtests/VMTests/vmArithmeticTest"); }
-#[test] fn vm_bitwise_logic() { run("res/ethtests/VMTests/vmBitwiseLogicOperation"); }
-#[test] fn vm_block_info() { run("res/ethtests/VMTests/vmBlockInfoTest"); }
-#[test] fn vm_environmental_info() { run("res/ethtests/VMTests/vmEnvironmentalInfo"); }
-#[test] fn vm_io_and_flow() { run("res/ethtests/VMTests/vmIOandFlowOperations"); }
-#[test] fn vm_log() { run("res/ethtests/VMTests/vmLogTest"); }
-#[test] #[ignore] fn vm_performance() { run("res/ethtests/VMTests/vmPerformance"); }
-#[test] fn vm_push_dup_swap() { run("res/ethtests/VMTests/vmPushDupSwapTest"); }
-#[test] fn vm_random() { run("res/ethtests/VMTests/vmRandomTest"); }
-#[test] fn vm_sha3() { run("res/ethtests/VMTests/vmSha3Test"); }
-#[test] fn vm_system() { run("res/ethtests/VMTests/vmSystemOperations"); }
-#[test] fn vm_other() { run("res/ethtests/VMTests/vmTests"); }
+#[test] fn vm_arithmetic() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmArithmeticTest"); }
+#[test] fn vm_bitwise_logic() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmBitwiseLogicOperation"); }
+#[test] fn vm_block_info() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmBlockInfoTest"); }
+#[test] fn vm_environmental_info() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmEnvironmentalInfo"); }
+#[test] fn vm_io_and_flow() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmIOandFlowOperations"); }
+#[test] fn vm_log() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmLogTest"); }
+#[test] #[ignore] fn vm_performance() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmPerformance"); }
+#[test] fn vm_push_dup_swap() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmPushDupSwapTest"); }
+#[test] fn vm_random() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmRandomTest"); }
+#[test] fn vm_sha3() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmSha3Test"); }
+#[test] fn vm_system() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmSystemOperations"); }
+#[test] fn vm_other() { run("res/ethtests/LegacyTests/Constantinople/VMTests/vmTests"); }
