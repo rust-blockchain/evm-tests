@@ -50,6 +50,10 @@ pub fn run(dir: &str) {
 #[test] fn st_eip150_specific() { run("res/ethtests/GeneralStateTests/stEIP150Specific") }
 #[test] fn st_eip158_specific() { run("res/ethtests/GeneralStateTests/stEIP158Specific") }
 // post-Berlin transaction descriptions without gasPrice
+#[test] #[ignore] fn st_eip1559() { run("res/ethtests/GeneralStateTests/stEIP1559") }
+// post-Berlin transaction descriptions without gasPrice
+#[test] #[ignore] fn st_eip2930() { run("res/ethtests/GeneralStateTests/stEIP2930") }
+// post-Berlin transaction descriptions without gasPrice
 #[test] #[ignore] fn st_example() { run("res/ethtests/GeneralStateTests/stExample") }
 #[test] fn st_ext_code_hash() { run("res/ethtests/GeneralStateTests/stExtCodeHash") }
 #[test] fn st_homestead_specific() { run("res/ethtests/GeneralStateTests/stHomesteadSpecific") }
@@ -79,7 +83,9 @@ pub fn run(dir: &str) {
 #[test] #[ignore] fn st_sstore() { run("res/ethtests/GeneralStateTests/stSStoreTest") }
 #[test] fn st_stack() { run("res/ethtests/GeneralStateTests/stStackTests") }
 #[test] #[ignore] fn st_static_call() { run("res/ethtests/GeneralStateTests/stStaticCall") }
+#[test] fn st_static_flag_enabled() { run("res/ethtests/GeneralStateTests/stStaticFlagEnabled") }
 #[test] fn st_system_operations() { run("res/ethtests/GeneralStateTests/stSystemOperationsTest") }
+#[test] #[ignore] fn st_time_consuming() { run("res/ethtests/GeneralStateTests/stTimeConsuming") }
 #[test] fn st_transaction() { run("res/ethtests/GeneralStateTests/stTransactionTest") }
 #[test] fn st_transition() { run("res/ethtests/GeneralStateTests/stTransitionTest") }
 #[test] fn st_wallet() { run("res/ethtests/GeneralStateTests/stWalletTest") }
