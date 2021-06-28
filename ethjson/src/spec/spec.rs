@@ -40,8 +40,10 @@ pub enum ForkSpec {
 	ConstantinopleFix,
 	/// Istanbul (#9,069,000, 2019-12-08)
 	Istanbul,
-	/// Berlin (To be announced)
+	/// Berlin (#12,244,000, 2021-04-15)
 	Berlin,
+	/// London (To be announced)
+	London,
 	/// Byzantium transition test-net
 	EIP158ToByzantiumAt5,
 	/// Homestead transition test-net
