@@ -93,3 +93,14 @@ pub fn run(dir: &str) {
 #[test] fn st_zero_calls() { run("res/ethtests/GeneralStateTests/stZeroCallsTest") }
 #[test] fn st_zero_knowledge() { run("res/ethtests/GeneralStateTests/stZeroKnowledge") }
 #[test] fn st_zero_knowledge2() { run("res/ethtests/GeneralStateTests/stZeroKnowledge2") }
+
+mod vm {
+	use super::*;
+
+	#[test] fn vm_arithmetic() { run("res/ethtests/GeneralStateTests/VMTests/vmArithmeticTest"); }
+	#[test] fn vm_bitwise_logic() { run("res/ethtests/GeneralStateTests/VMTests/vmBitwiseLogicOperation"); }
+	#[test] fn vm_io_and_flow() { run("res/ethtests/GeneralStateTests/VMTests/vmIOandFlowOperations"); }
+	#[test] fn vm_log() { run("res/ethtests/GeneralStateTests/VMTests/vmLogTest"); }
+	#[test] #[ignore] fn vm_performance() { run("res/ethtests/GeneralStateTests/VMTests/vmPerformance"); }
+	#[test] fn vm_other() { run("res/ethtests/GeneralStateTests/VMTests/vmTests"); }
+}
