@@ -49,12 +49,9 @@ pub fn run(dir: &str) {
 #[test] fn st_eip150_single_code_gas_prices() { run("res/ethtests/GeneralStateTests/stEIP150singleCodeGasPrices") }
 #[test] fn st_eip150_specific() { run("res/ethtests/GeneralStateTests/stEIP150Specific") }
 #[test] fn st_eip158_specific() { run("res/ethtests/GeneralStateTests/stEIP158Specific") }
-// post-Berlin transaction descriptions without gasPrice
-#[test] #[ignore] fn st_eip1559() { run("res/ethtests/GeneralStateTests/stEIP1559") }
-// post-Berlin transaction descriptions without gasPrice
-#[test] #[ignore] fn st_eip2930() { run("res/ethtests/GeneralStateTests/stEIP2930") }
-// post-Berlin transaction descriptions without gasPrice
-#[test] #[ignore] fn st_example() { run("res/ethtests/GeneralStateTests/stExample") }
+#[test] fn st_eip1559() { run("res/ethtests/GeneralStateTests/stEIP1559") }
+#[test] fn st_eip2930() { run("res/ethtests/GeneralStateTests/stEIP2930") }
+#[test] fn st_example() { run("res/ethtests/GeneralStateTests/stExample") }
 #[test] fn st_ext_code_hash() { run("res/ethtests/GeneralStateTests/stExtCodeHash") }
 #[test] fn st_homestead_specific() { run("res/ethtests/GeneralStateTests/stHomesteadSpecific") }
 #[test] fn st_init_code() { run("res/ethtests/GeneralStateTests/stInitCodeTest") }

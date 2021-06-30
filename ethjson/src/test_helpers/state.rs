@@ -55,7 +55,7 @@ pub struct MultiTransaction {
 	/// Gas limit set.
 	pub gas_limit: Vec<Uint>,
 	/// Gas price.
-	pub gas_price: Uint,
+	pub gas_price: Option<Uint>,
 	/// Nonce.
 	pub nonce: Uint,
 	/// Secret key.
@@ -73,7 +73,7 @@ impl MultiTransaction {
 		Transaction {
 			data: self.data[indexes.data as usize].clone(),
 			gas_limit: self.gas_limit[indexes.gas as usize],
-			gas_price: self.gas_price,
+			gas_price: self.gas_price.expect("transaction formats without gasPrice are not supported yet"),
 			nonce: self.nonce,
 			to: self.to.clone(),
 			value: self.value[indexes.value as usize],
