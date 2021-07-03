@@ -40,11 +40,13 @@ impl Test {
 	}
 }
 
-fn istanbul_precompile(
+fn istanbul_precompile<S>(
 	address: H160,
 	input: &[u8],
 	target_gas: Option<u64>,
 	_context: &evm::Context,
+	_state: &mut S,
+	_is_static: bool,
 ) -> Option<Result<PrecompileOutput, ExitError>> {
 	use ethcore_builtin::*;
 	use parity_bytes::BytesRef;
@@ -96,8 +98,8 @@ pub fn test(name: &str, test: Test) {
 
 pub fn test_run(name: &str, test: Test) {
 	for (spec, states) in &test.0.post_states {
-		let (gasometer_config, precompile, delete_empty) = match spec {
-			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), istanbul_precompile, true),
+		let (gasometer_config, delete_empty) = match spec {
+			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
 			spec => {
 				println!("Skip spec {:?}", spec);
 				continue
@@ -119,6 +121,8 @@ pub fn test_run(name: &str, test: Test) {
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
 			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 			let executor_state = MemoryStackState::new(metadata, &backend);
+			// TODO: adapt precompile to the fork spec
+			let precompile = istanbul_precompile;
 			let mut executor = StackExecutor::new_with_precompile(
 				executor_state,
 				&gasometer_config,
