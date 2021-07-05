@@ -27,7 +27,7 @@ impl Test {
 
 	pub fn unwrap_to_vicinity(&self) -> MemoryVicinity {
 		MemoryVicinity {
-			gas_price: self.0.transaction.gas_price.clone().into(),
+			gas_price: self.0.transaction.gas_price.as_ref().unwrap().clone().into(),
 			origin: self.unwrap_caller(),
 			block_hashes: Vec::new(),
 			block_number: self.0.env.number.clone().into(),
@@ -97,11 +97,16 @@ pub fn test(name: &str, test: Test) {
 }
 
 pub fn test_run(name: &str, test: Test) {
+	if test.0.transaction.gas_price.is_none() {
+		println!("Skip {}: transaction without gasPrice", name);
+		return;
+	}
+
 	for (spec, states) in &test.0.post_states {
 		let (gasometer_config, delete_empty) = match spec {
 			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
 			spec => {
-				println!("Skip spec {:?}", spec);
+				println!("Skip {}:{:?}", name, spec);
 				continue
 			},
 		};

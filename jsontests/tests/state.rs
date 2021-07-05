@@ -41,7 +41,6 @@ pub fn run(dir: &str) {
 #[test] fn st_call_delegate_codes_call_code_homestead() { run("res/ethtests/GeneralStateTests/stCallDelegateCodesCallCodeHomestead") }
 #[test] fn st_call_delegate_codes_homestead() { run("res/ethtests/GeneralStateTests/stCallDelegateCodesHomestead") }
 #[test] fn st_chain_id() { run("res/ethtests/GeneralStateTests/stChainId") }
-#[test] fn st_changed_eip150() { run("res/ethtests/GeneralStateTests/stChangedEIP150") }
 #[test] fn st_code_copy() { run("res/ethtests/GeneralStateTests/stCodeCopyTest") }
 #[test] fn st_code_size_limit() { run("res/ethtests/GeneralStateTests/stCodeSizeLimit") }
 #[test] #[ignore] fn st_create2() { run("res/ethtests/GeneralStateTests/stCreate2") }
@@ -50,6 +49,8 @@ pub fn run(dir: &str) {
 #[test] fn st_eip150_single_code_gas_prices() { run("res/ethtests/GeneralStateTests/stEIP150singleCodeGasPrices") }
 #[test] fn st_eip150_specific() { run("res/ethtests/GeneralStateTests/stEIP150Specific") }
 #[test] fn st_eip158_specific() { run("res/ethtests/GeneralStateTests/stEIP158Specific") }
+#[test] fn st_eip1559() { run("res/ethtests/GeneralStateTests/stEIP1559") }
+#[test] fn st_eip2930() { run("res/ethtests/GeneralStateTests/stEIP2930") }
 #[test] fn st_example() { run("res/ethtests/GeneralStateTests/stExample") }
 #[test] fn st_ext_code_hash() { run("res/ethtests/GeneralStateTests/stExtCodeHash") }
 #[test] fn st_homestead_specific() { run("res/ethtests/GeneralStateTests/stHomesteadSpecific") }
@@ -79,7 +80,9 @@ pub fn run(dir: &str) {
 #[test] #[ignore] fn st_sstore() { run("res/ethtests/GeneralStateTests/stSStoreTest") }
 #[test] fn st_stack() { run("res/ethtests/GeneralStateTests/stStackTests") }
 #[test] #[ignore] fn st_static_call() { run("res/ethtests/GeneralStateTests/stStaticCall") }
+#[test] fn st_static_flag_enabled() { run("res/ethtests/GeneralStateTests/stStaticFlagEnabled") }
 #[test] fn st_system_operations() { run("res/ethtests/GeneralStateTests/stSystemOperationsTest") }
+#[test] #[ignore] fn st_time_consuming() { run("res/ethtests/GeneralStateTests/stTimeConsuming") }
 #[test] fn st_transaction() { run("res/ethtests/GeneralStateTests/stTransactionTest") }
 #[test] fn st_transition() { run("res/ethtests/GeneralStateTests/stTransitionTest") }
 #[test] fn st_wallet() { run("res/ethtests/GeneralStateTests/stWalletTest") }
@@ -87,3 +90,14 @@ pub fn run(dir: &str) {
 #[test] fn st_zero_calls() { run("res/ethtests/GeneralStateTests/stZeroCallsTest") }
 #[test] fn st_zero_knowledge() { run("res/ethtests/GeneralStateTests/stZeroKnowledge") }
 #[test] fn st_zero_knowledge2() { run("res/ethtests/GeneralStateTests/stZeroKnowledge2") }
+
+mod vm {
+	use super::*;
+
+	#[test] fn vm_arithmetic() { run("res/ethtests/GeneralStateTests/VMTests/vmArithmeticTest"); }
+	#[test] fn vm_bitwise_logic() { run("res/ethtests/GeneralStateTests/VMTests/vmBitwiseLogicOperation"); }
+	#[test] fn vm_io_and_flow() { run("res/ethtests/GeneralStateTests/VMTests/vmIOandFlowOperations"); }
+	#[test] fn vm_log() { run("res/ethtests/GeneralStateTests/VMTests/vmLogTest"); }
+	#[test] #[ignore] fn vm_performance() { run("res/ethtests/GeneralStateTests/VMTests/vmPerformance"); }
+	#[test] fn vm_other() { run("res/ethtests/GeneralStateTests/VMTests/vmTests"); }
+}
