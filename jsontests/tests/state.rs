@@ -41,7 +41,6 @@ pub fn run(dir: &str) {
 #[test] fn st_call_delegate_codes_call_code_homestead() { run("res/ethtests/GeneralStateTests/stCallDelegateCodesCallCodeHomestead") }
 #[test] fn st_call_delegate_codes_homestead() { run("res/ethtests/GeneralStateTests/stCallDelegateCodesHomestead") }
 #[test] fn st_chain_id() { run("res/ethtests/GeneralStateTests/stChainId") }
-#[test] fn st_changed_eip150() { run("res/ethtests/GeneralStateTests/stChangedEIP150") }
 #[test] fn st_code_copy() { run("res/ethtests/GeneralStateTests/stCodeCopyTest") }
 #[test] fn st_code_size_limit() { run("res/ethtests/GeneralStateTests/stCodeSizeLimit") }
 #[test] #[ignore] fn st_create2() { run("res/ethtests/GeneralStateTests/stCreate2") }

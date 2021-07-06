@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
-use evm::{Config, ExitSucceed, ExitError};
-use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput};
+use evm::{Config, ExitSucceed, ExitError, Context};
+use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput, Precompile, StackState};
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
 use crate::utils::*;
@@ -40,43 +40,46 @@ impl Test {
 	}
 }
 
-fn istanbul_precompile<S>(
-	address: H160,
-	input: &[u8],
-	target_gas: Option<u64>,
-	_context: &evm::Context,
-	_state: &mut S,
-	_is_static: bool,
-) -> Option<Result<PrecompileOutput, ExitError>> {
-	use ethcore_builtin::*;
-	use parity_bytes::BytesRef;
+pub struct BerlinPrecompile {
+	pub addresses: Vec<H160>,
+}
 
-	let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> = serde_json::from_str(include_str!("../res/istanbul_builtins.json")).unwrap();
-	let builtins = builtins.into_iter().map(|(address, builtin)| {
-		(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
-	}).collect::<BTreeMap<H160, Builtin>>();
+impl Precompile for BerlinPrecompile {
+	fn run<'config, S: StackState<'config>>(&self, address: H160, input: &[u8], gas_limit: Option<u64>, _context: &Context, _state: &mut S, _is_static: bool) -> Option<Result<PrecompileOutput, ExitError>> {
+		use ethcore_builtin::*;
+		use parity_bytes::BytesRef;
 
-	if let Some(builtin) = builtins.get(&address) {
-		let cost = builtin.cost(input, 0);
+		let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> = serde_json::from_str(include_str!("../res/istanbul_builtins.json")).unwrap();
+		let builtins = builtins.into_iter().map(|(address, builtin)| {
+			(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
+		}).collect::<BTreeMap<H160, Builtin>>();
 
-		if let Some(target_gas) = target_gas {
-			if cost > U256::from(u64::max_value()) || target_gas < cost.as_u64() {
-				return Some(Err(ExitError::OutOfGas))
+		if let Some(builtin) = builtins.get(&address) {
+			let cost = builtin.cost(input, 0);
+
+			if let Some(target_gas) = gas_limit {
+				if cost > U256::from(u64::MAX) || target_gas < cost.as_u64() {
+					return Some(Err(ExitError::OutOfGas))
+				}
 			}
-		}
 
-		let mut output = Vec::new();
-		match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
-			Ok(()) => Some(Ok(PrecompileOutput {
-				exit_status: ExitSucceed::Stopped,
-				output,
-				cost: cost.as_u64(),
-				logs: Vec::new(),
-			})),
-			Err(e) => Some(Err(ExitError::Other(e.into()))),
+			let mut output = Vec::new();
+			match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
+				Ok(()) => Some(Ok(PrecompileOutput {
+					exit_status: ExitSucceed::Stopped,
+					output,
+					cost: cost.as_u64(),
+					logs: Vec::new(),
+				})),
+				Err(e) => Some(Err(ExitError::Other(e.into()))),
+			}
+		} else {
+			None
 		}
-	} else {
-		None
+	}
+
+	fn addresses(&self) -> &[H160] {
+		&self.addresses
 	}
 }
 
@@ -96,10 +99,11 @@ pub fn test(name: &str, test: Test) {
 	child.join().unwrap();
 }
 
-pub fn test_run(name: &str, test: Test) {
+fn test_run(name: &str, test: Test) {
 	for (spec, states) in &test.0.post_states {
 		let (gasometer_config, delete_empty) = match spec {
 			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
+			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
 			spec => {
 				println!("Skip spec {:?}", spec);
 				continue
@@ -122,11 +126,10 @@ pub fn test_run(name: &str, test: Test) {
 			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 			let executor_state = MemoryStackState::new(metadata, &backend);
 			// TODO: adapt precompile to the fork spec
-			let precompile = istanbul_precompile;
 			let mut executor = StackExecutor::new_with_precompile(
 				executor_state,
 				&gasometer_config,
-				precompile,
+				BerlinPrecompile { addresses: vec![H160::from_low_u64_be(1), H160::from_low_u64_be(2)] },
 			);
 			let total_fee = vicinity.gas_price * gas_limit;
 
@@ -139,7 +142,7 @@ pub fn test_run(name: &str, test: Test) {
 
 					let _reason = executor.transact_call(
 						caller,
-						to.clone().into(),
+						to.into(),
 						value,
 						data,
 						gas_limit
