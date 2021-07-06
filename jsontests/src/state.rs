@@ -125,11 +125,12 @@ fn test_run(name: &str, test: Test) {
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
 			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 			let executor_state = MemoryStackState::new(metadata, &backend);
+            let precompile_addresses: Vec<_> = (1..=9).map(H160::from_low_u64_be).collect();
 			// TODO: adapt precompile to the fork spec
 			let mut executor = StackExecutor::new_with_precompile(
 				executor_state,
 				&gasometer_config,
-				BerlinPrecompile { addresses: vec![H160::from_low_u64_be(1), H160::from_low_u64_be(2)] },
+				BerlinPrecompile { addresses: precompile_addresses },
 			);
 			let total_fee = vicinity.gas_price * gas_limit;
 
