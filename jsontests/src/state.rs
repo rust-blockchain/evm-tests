@@ -40,16 +40,19 @@ impl Test {
 	}
 }
 
-pub struct BerlinPrecompile {
+pub struct JsonPrecompile {
 	pub addresses: Vec<H160>,
+	pub spec_path: &'static str,
 }
 
-impl Precompile for BerlinPrecompile {
+impl Precompile for JsonPrecompile {
 	fn run<'config, S: StackState<'config>>(&self, address: H160, input: &[u8], gas_limit: Option<u64>, _context: &Context, _state: &mut S, _is_static: bool) -> Option<Result<PrecompileOutput, ExitError>> {
 		use ethcore_builtin::*;
 		use parity_bytes::BytesRef;
 
-		let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> = serde_json::from_str(include_str!("../res/istanbul_builtins.json")).unwrap();
+		let reader = std::fs::File::open(self.spec_path).unwrap();
+		let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> =
+			serde_json::from_reader(reader).unwrap();
 		let builtins = builtins.into_iter().map(|(address, builtin)| {
 			(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
 		}).collect::<BTreeMap<H160, Builtin>>();
@@ -101,9 +104,9 @@ pub fn test(name: &str, test: Test) {
 
 fn test_run(name: &str, test: Test) {
 	for (spec, states) in &test.0.post_states {
-		let (gasometer_config, delete_empty) = match spec {
-			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
-			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
+		let (gasometer_config, delete_empty, precompile_path) = match spec {
+			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true, "./res/istanbul_builtins.json"),
+			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true, "./res/berlin_builtins.json"),
 			spec => {
 				println!("Skip spec {:?}", spec);
 				continue
@@ -126,11 +129,11 @@ fn test_run(name: &str, test: Test) {
 			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 			let executor_state = MemoryStackState::new(metadata, &backend);
             let precompile_addresses: Vec<_> = (1..=9).map(H160::from_low_u64_be).collect();
-			// TODO: adapt precompile to the fork spec
+			let precompile = JsonPrecompile { addresses: precompile_addresses, spec_path: precompile_path };
 			let mut executor = StackExecutor::new_with_precompile(
 				executor_state,
 				&gasometer_config,
-				BerlinPrecompile { addresses: precompile_addresses },
+				precompile,
 			);
 			let total_fee = vicinity.gas_price * gas_limit;
 
