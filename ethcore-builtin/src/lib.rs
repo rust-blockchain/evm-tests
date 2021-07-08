@@ -279,7 +279,7 @@ impl ModexpPricer {
 		} else {
 			// else > 32
 			U256::from(8).saturating_mul(exponent_length - thirty_two)
-				.saturating_add(U256::from(exponent.bits()) - U256::from(1))
+				.saturating_add(U256::from(exponent.bits()).saturating_sub(U256::from(1)))
 		};
 		std::cmp::max(it, U256::one())
 	}
