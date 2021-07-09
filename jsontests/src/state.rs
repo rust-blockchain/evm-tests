@@ -139,6 +139,11 @@ fn test_run(name: &str, test: Test) {
 
 			executor.state_mut().withdraw(caller, total_fee).unwrap();
 
+            let access_list = transaction.access_list
+                .into_iter()
+                .map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
+                .collect();
+
 			match transaction.to {
 				ethjson::maybe::MaybeEmpty::Some(to) => {
 					let data = data;
@@ -149,7 +154,8 @@ fn test_run(name: &str, test: Test) {
 						to.into(),
 						value,
 						data,
-						gas_limit
+						gas_limit,
+                        access_list,
 					);
 				},
 				ethjson::maybe::MaybeEmpty::None => {
@@ -160,7 +166,8 @@ fn test_run(name: &str, test: Test) {
 						caller,
 						value,
 						code,
-						gas_limit
+						gas_limit,
+                        access_list,
 					);
 				},
 			}
