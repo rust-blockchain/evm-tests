@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
 use evm::{Config, ExitSucceed, ExitError, Context};
-use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput, Precompile, StackState};
+use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput, Precompiles, StackState};
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
 use crate::utils::*;
@@ -45,8 +45,8 @@ pub struct JsonPrecompile {
 	pub spec_path: &'static str,
 }
 
-impl Precompile for JsonPrecompile {
-	fn run<'config, S: StackState<'config>>(&self, address: H160, input: &[u8], gas_limit: Option<u64>, _context: &Context, _state: &mut S, _is_static: bool) -> Option<Result<PrecompileOutput, ExitError>> {
+impl<'config, S: StackState<'config>> Precompiles<S> for JsonPrecompile {
+	fn run(&self, address: H160, input: &[u8], gas_limit: Option<u64>, _context: &Context, _state: &mut S, _is_static: bool) -> Option<Result<PrecompileOutput, ExitError>> {
 		use ethcore_builtin::*;
 		use parity_bytes::BytesRef;
 
