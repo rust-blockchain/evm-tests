@@ -40,13 +40,11 @@ impl Test {
 	}
 }
 
-fn istanbul_precompile<S>(
+fn istanbul_precompile(
 	address: H160,
 	input: &[u8],
 	target_gas: Option<u64>,
 	_context: &evm::Context,
-	_state: &mut S,
-	_is_static: bool,
 ) -> Option<Result<PrecompileOutput, ExitError>> {
 	use ethcore_builtin::*;
 	use parity_bytes::BytesRef;

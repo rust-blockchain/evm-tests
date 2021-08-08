@@ -594,7 +594,7 @@ dependencies = [
 
 [[package]]
 name = "evm"
-version = "0.29.0"
+version = "0.30.0"
 dependencies = [
  "environmental",
  "ethereum",
@@ -611,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "evm-core"
-version = "0.29.0"
+version = "0.30.0"
 dependencies = [
  "funty",
  "parity-scale-codec",
@@ -621,7 +621,7 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.29.0"
+version = "0.30.0"
 dependencies = [
  "environmental",
  "evm-core",
@@ -651,7 +651,7 @@ dependencies = [
 
 [[package]]
 name = "evm-runtime"
-version = "0.29.0"
+version = "0.30.0"
 dependencies = [
  "environmental",
  "evm-core",
