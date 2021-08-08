@@ -10,13 +10,13 @@ edition = "2018"
 
 [dependencies]
 evm = { path = "../evm" }
-primitive-types = "0.9"
+primitive-types = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 hex = "0.4"
 clap = "2.32"
 ethjson = { path = "../ethjson", features = ["test-helpers"] }
-parity-crypto = { version = "0.8", features = ["publickey"] }
+parity-crypto = { version = "0.9", features = ["publickey"] }
 triehash-ethereum = { path = "../triehash-ethereum" }
 ethcore-builtin = { path = "../ethcore-builtin" }
 rlp = "0.5"
