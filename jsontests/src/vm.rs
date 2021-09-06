@@ -1,11 +1,11 @@
+use crate::utils::*;
+use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
+use evm::executor::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use evm::Config;
+use primitive_types::{H160, U256};
+use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::rc::Rc;
-use serde::Deserialize;
-use primitive_types::{H160, U256};
-use evm::Config;
-use evm::backend::{ApplyBackend, MemoryBackend, MemoryVicinity, MemoryAccount};
-use evm::executor::{StackExecutor, StackSubstateMetadata, MemoryStackState};
-use crate::utils::*;
 
 #[derive(Deserialize, Debug)]
 pub struct Test(ethjson::vm::Vm);
@@ -91,7 +91,10 @@ pub fn test(name: &str, test: Test) {
 		let expected_post_gas = test.unwrap_to_post_gas();
 		print!("{:?} ", reason);
 
-		assert_eq!(runtime.machine().return_value(), test.unwrap_to_return_value());
+		assert_eq!(
+			runtime.machine().return_value(),
+			test.unwrap_to_return_value()
+		);
 		assert_valid_state(test.0.post_state.as_ref().unwrap(), &backend.state());
 		assert_eq!(gas, expected_post_gas);
 		println!("succeed");

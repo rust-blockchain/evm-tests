@@ -1,4 +1,4 @@
 mod utils;
 
-pub mod vm;
 pub mod state;
+pub mod vm;

@@ -35,9 +35,9 @@ pub struct HardcodedSync {
 
 #[cfg(test)]
 mod tests {
+	use super::{HardcodedSync, Uint, H256};
+	use ethereum_types::{H256 as Eth256, U256};
 	use std::str::FromStr;
-	use super::{H256, HardcodedSync, Uint};
-	use ethereum_types::{U256, H256 as Eth256};
 
 	#[test]
 	fn hardcoded_sync_deserialization() {

@@ -20,8 +20,8 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use ethereum_types::U256;
+use serde::de::{Error, IntoDeserializer, Visitor};
 use serde::{Deserialize, Deserializer};
-use serde::de::{Error, Visitor, IntoDeserializer};
 
 use crate::uint::Uint;
 
@@ -34,38 +34,51 @@ pub enum MaybeEmpty<T> {
 	None,
 }
 
-impl<'a, T> Deserialize<'a> for MaybeEmpty<T> where T: Deserialize<'a> {
+impl<'a, T> Deserialize<'a> for MaybeEmpty<T>
+where
+	T: Deserialize<'a>,
+{
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-		where D: Deserializer<'a>
+	where
+		D: Deserializer<'a>,
 	{
 		deserializer.deserialize_any(MaybeEmptyVisitor::new())
 	}
 }
 
 struct MaybeEmptyVisitor<T> {
-	_phantom: PhantomData<T>
+	_phantom: PhantomData<T>,
 }
 
 impl<T> MaybeEmptyVisitor<T> {
 	fn new() -> Self {
 		MaybeEmptyVisitor {
-			_phantom: PhantomData
+			_phantom: PhantomData,
 		}
 	}
 }
 
-impl<'a, T> Visitor<'a> for MaybeEmptyVisitor<T> where T: Deserialize<'a> {
+impl<'a, T> Visitor<'a> for MaybeEmptyVisitor<T>
+where
+	T: Deserialize<'a>,
+{
 	type Value = MaybeEmpty<T>;
 
 	fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
 		write!(formatter, "an empty string or string-encoded type")
 	}
 
-	fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> where E: Error {
+	fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+	where
+		E: Error,
+	{
 		self.visit_string(value.to_owned())
 	}
 
-	fn visit_string<E>(self, value: String) -> Result<Self::Value, E> where E: Error {
+	fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+	where
+		E: Error,
+	{
 		if value.is_empty() {
 			Ok(MaybeEmpty::None)
 		} else {
@@ -78,7 +91,7 @@ impl<T> Into<Option<T>> for MaybeEmpty<T> {
 	fn into(self) -> Option<T> {
 		match self {
 			MaybeEmpty::Some(s) => Some(s),
-			MaybeEmpty::None => None
+			MaybeEmpty::None => None,
 		}
 	}
 }
@@ -116,18 +129,25 @@ impl Default for MaybeEmpty<Uint> {
 
 #[cfg(test)]
 mod tests {
-	use std::str::FromStr;
 	use super::MaybeEmpty;
 	use crate::hash::H256;
+	use std::str::FromStr;
 
 	#[test]
 	fn maybe_deserialization() {
 		let s = r#"["", "5a39ed1020c04d4d84539975b893a4e7c53eab6c2965db8bc3468093a31bc5ae"]"#;
 		let deserialized: Vec<MaybeEmpty<H256>> = serde_json::from_str(s).unwrap();
-		assert_eq!(deserialized, vec![
-				   MaybeEmpty::None,
-				   MaybeEmpty::Some(H256(ethereum_types::H256::from_str("5a39ed1020c04d4d84539975b893a4e7c53eab6c2965db8bc3468093a31bc5ae").unwrap()))
-		]);
+		assert_eq!(
+			deserialized,
+			vec![
+				MaybeEmpty::None,
+				MaybeEmpty::Some(H256(
+					ethereum_types::H256::from_str(
+						"5a39ed1020c04d4d84539975b893a4e7c53eab6c2965db8bc3468093a31bc5ae"
+					)
+					.unwrap()
+				))
+			]
+		);
 	}
-
 }

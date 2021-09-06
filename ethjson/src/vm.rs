@@ -121,11 +121,11 @@ pub struct Env {
 
 #[cfg(test)]
 mod tests {
+	use super::{Address, Bytes, Call, Env, MaybeEmpty, State, Transaction, Uint, Vm, H256};
 	use std::str::FromStr;
-	use super::{Address, Bytes, Call, Env, H256, MaybeEmpty, State, Transaction, Uint, Vm};
 
 	use crate::spec::{Account, HashOrMap};
-	use ethereum_types::{U256, H160 as Hash160, H256 as Hash256};
+	use ethereum_types::{H160 as Hash160, H256 as Hash256, U256};
 	use maplit::btreemap;
 	use rustc_hex::FromHex;
 
@@ -178,60 +178,77 @@ mod tests {
 		}"#;
 		let vm: Vm = serde_json::from_str(s).expect("JSON is valid");
 		assert_eq!(vm.calls, Some(Vec::new()));
-		assert_eq!(vm.env, Env {
-			author: Address(Hash160::from_str("2adc25665018aa1fe0e6bc666dac8fc2697ff9ba").unwrap()),
-			difficulty: Uint(0x0100.into()),
-			gas_limit: Uint(0x0f4240.into()),
-			number: Uint(0.into()),
-			timestamp: Uint(1.into())
-		});
-		assert_eq!(vm.transaction, Transaction {
-			address: Address(Hash160::from_str("0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").unwrap()),
-			sender: Address(Hash160::from_str("cd1722f2947def4cf144679da39c4c32bdc35681").unwrap()),
-			code: Bytes::new(TEST_CODE.from_hex().unwrap()),
-			code_version: Uint(0.into()),
-			data: Bytes::new(Vec::new()),
-			gas: Uint(0x0186a0.into()),
-			gas_price: Uint(0x5af3107a4000_u64.into()),
-			origin: Address(Hash160::from_str("cd1722f2947def4cf144679da39c4c32bdc35681").unwrap()),
-			value: Uint(0x0de0b6b3a7640000_u64.into())
-		});
+		assert_eq!(
+			vm.env,
+			Env {
+				author: Address(
+					Hash160::from_str("2adc25665018aa1fe0e6bc666dac8fc2697ff9ba").unwrap()
+				),
+				difficulty: Uint(0x0100.into()),
+				gas_limit: Uint(0x0f4240.into()),
+				number: Uint(0.into()),
+				timestamp: Uint(1.into())
+			}
+		);
+		assert_eq!(
+			vm.transaction,
+			Transaction {
+				address: Address(
+					Hash160::from_str("0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").unwrap()
+				),
+				sender: Address(
+					Hash160::from_str("cd1722f2947def4cf144679da39c4c32bdc35681").unwrap()
+				),
+				code: Bytes::new(TEST_CODE.from_hex().unwrap()),
+				code_version: Uint(0.into()),
+				data: Bytes::new(Vec::new()),
+				gas: Uint(0x0186a0.into()),
+				gas_price: Uint(0x5af3107a4000_u64.into()),
+				origin: Address(
+					Hash160::from_str("cd1722f2947def4cf144679da39c4c32bdc35681").unwrap()
+				),
+				value: Uint(0x0de0b6b3a7640000_u64.into())
+			}
+		);
 		assert_eq!(vm.gas_left, Some(Uint(0x013874.into())));
 		assert_eq!(
 			vm.logs,
-			Some(H256(Hash256::from_str("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347").unwrap()))
+			Some(H256(
+				Hash256::from_str(
+					"1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"
+				)
+				.unwrap()
+			))
 		);
 		assert_eq!(vm.output, Some(Bytes::new(Vec::new())));
-		assert_eq!(vm.pre_state, State(
-			HashOrMap::Map(
-				btreemap![
-					Address(Hash160::from_str("0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").unwrap()) => Account {
-						builtin: None,
-						balance: Some(Uint(0x0de0b6b3a7640000_u64.into())),
-						code: Some(Bytes::new(TEST_CODE.from_hex().unwrap())),
-						constructor: None,
-						nonce: Some(Uint(0.into())),
-						storage: Some(btreemap![]),
-						version: None,
-					}
-				]))
+		assert_eq!(
+			vm.pre_state,
+			State(HashOrMap::Map(btreemap![
+				Address(Hash160::from_str("0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").unwrap()) => Account {
+					builtin: None,
+					balance: Some(Uint(0x0de0b6b3a7640000_u64.into())),
+					code: Some(Bytes::new(TEST_CODE.from_hex().unwrap())),
+					constructor: None,
+					nonce: Some(Uint(0.into())),
+					storage: Some(btreemap![]),
+					version: None,
+				}
+			]))
 		);
-		assert_eq!(vm.post_state, Some(
-				State(
-					HashOrMap::Map(
-						btreemap![
-							Address(Hash160::from_str("0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").unwrap()) => Account {
-								builtin: None,
-								balance: Some(Uint(0x0de0b6b3a7640000_u64.into())),
-								code: Some(Bytes::new(TEST_CODE.from_hex().unwrap())),
-								constructor: None,
-								nonce: Some(Uint(0.into())),
-								storage: Some(btreemap![
-									Uint(0.into()) => Uint(U256::from_str("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe").unwrap())
-								]),
-								version: None,
-						}]))
-				)
+		assert_eq!(
+			vm.post_state,
+			Some(State(HashOrMap::Map(btreemap![
+				Address(Hash160::from_str("0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6").unwrap()) => Account {
+					builtin: None,
+					balance: Some(Uint(0x0de0b6b3a7640000_u64.into())),
+					code: Some(Bytes::new(TEST_CODE.from_hex().unwrap())),
+					constructor: None,
+					nonce: Some(Uint(0.into())),
+					storage: Some(btreemap![
+						Uint(0.into()) => Uint(U256::from_str("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe").unwrap())
+					]),
+					version: None,
+			}])))
 		);
 	}
 
@@ -245,10 +262,14 @@ mod tests {
 		}"#;
 		let call: Call = serde_json::from_str(s).unwrap();
 
-		assert_eq!(&call.data[..],
-			&[0x11, 0x11, 0x22, 0x22, 0x33, 0x33, 0x44, 0x44, 0x55, 0x55, 0x66, 0x66, 0x77, 0x77,
-			  0x88, 0x88, 0x99, 0x99, 0x00, 0x00, 0xaa, 0xaa, 0xbb, 0xbb, 0xcc, 0xcc, 0xdd, 0xdd,
-			  0xee, 0xee, 0xff, 0xff]);
+		assert_eq!(
+			&call.data[..],
+			&[
+				0x11, 0x11, 0x22, 0x22, 0x33, 0x33, 0x44, 0x44, 0x55, 0x55, 0x66, 0x66, 0x77, 0x77,
+				0x88, 0x88, 0x99, 0x99, 0x00, 0x00, 0xaa, 0xaa, 0xbb, 0xbb, 0xcc, 0xcc, 0xdd, 0xdd,
+				0xee, 0xee, 0xff, 0xff
+			]
+		);
 
 		assert_eq!(call.destination, MaybeEmpty::None);
 		assert_eq!(call.gas_limit, Uint(U256::from(0x1748766aa5u64)));
@@ -267,7 +288,12 @@ mod tests {
 		let call: Call = serde_json::from_str(s).unwrap();
 
 		assert_eq!(&call.data[..], &[0x12, 0x34]);
-		assert_eq!(call.destination, MaybeEmpty::Some(Address(Hash160::from_str("5a39ed1020c04d4d84539975b893a4e7c53eab6c").unwrap())));
+		assert_eq!(
+			call.destination,
+			MaybeEmpty::Some(Address(
+				Hash160::from_str("5a39ed1020c04d4d84539975b893a4e7c53eab6c").unwrap()
+			))
+		);
 		assert_eq!(call.gas_limit, Uint(U256::from(0x1748766aa5u64)));
 		assert_eq!(call.value, Uint(U256::from(0)));
 	}

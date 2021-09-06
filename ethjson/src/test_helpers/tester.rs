@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Open Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// A genric wrapper over a `BTreeMap` for tests
 #[derive(Deserialize)]
@@ -34,10 +34,13 @@ impl<T: Ord, U> IntoIterator for GenericTester<T, U> {
 impl<T, U> GenericTester<T, U>
 where
 	T: DeserializeOwned + Ord,
-	U: DeserializeOwned
+	U: DeserializeOwned,
 {
 	/// Loads test from json.
-	pub fn load<R>(reader: R) -> Result<Self, serde_json::Error> where R: std::io::Read {
+	pub fn load<R>(reader: R) -> Result<Self, serde_json::Error>
+	where
+		R: std::io::Read,
+	{
 		serde_json::from_reader(reader)
 	}
 }

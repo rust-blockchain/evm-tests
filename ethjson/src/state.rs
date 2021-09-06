@@ -18,7 +18,7 @@
 
 use crate::{
 	bytes::Bytes,
-	hash::{Address, H256, Bloom},
+	hash::{Address, Bloom, H256},
 };
 use serde::Deserialize;
 

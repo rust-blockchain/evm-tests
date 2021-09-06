@@ -1,25 +1,31 @@
-use std::fs::File;
-use std::collections::HashMap;
-use std::io::BufReader;
 use clap::{App, Arg, SubCommand};
-use evm_jsontests::vm as vmtests;
 use evm_jsontests::state as statetests;
+use evm_jsontests::vm as vmtests;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufReader;
 
 fn main() {
 	let matches = App::new("jsontests")
-        .version("0.1.0")
-        .author("Wei Tang <hi@that.world>")
-        .about("EVM json test utilities")
-		.subcommand(SubCommand::with_name("vm")
-					.arg(Arg::with_name("FILE")
-						 .help("Target yaml file to import")
-						 .required(true)
-						 .min_values(1)))
-		.subcommand(SubCommand::with_name("state")
-					.arg(Arg::with_name("FILE")
-						 .help("Target yaml file to import")
-						 .required(true)
-						 .min_values(1)))
+		.version("0.1.0")
+		.author("Wei Tang <hi@that.world>")
+		.about("EVM json test utilities")
+		.subcommand(
+			SubCommand::with_name("vm").arg(
+				Arg::with_name("FILE")
+					.help("Target yaml file to import")
+					.required(true)
+					.min_values(1),
+			),
+		)
+		.subcommand(
+			SubCommand::with_name("state").arg(
+				Arg::with_name("FILE")
+					.help("Target yaml file to import")
+					.required(true)
+					.min_values(1),
+			),
+		)
 		.get_matches();
 
 	if let Some(matches) = matches.subcommand_matches("vm") {

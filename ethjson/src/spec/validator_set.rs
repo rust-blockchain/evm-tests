@@ -16,9 +16,9 @@
 
 //! Validator set deserialization.
 
-use std::collections::BTreeMap;
 use crate::{hash::Address, uint::Uint};
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// Different ways of specifying validators.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -37,9 +37,9 @@ pub enum ValidatorSet {
 
 #[cfg(test)]
 mod tests {
-	use std::str::FromStr;
 	use super::{Address, Uint, ValidatorSet};
 	use ethereum_types::{H160, U256};
+	use std::str::FromStr;
 
 	#[test]
 	fn validator_set_deserialization() {
@@ -60,16 +60,31 @@ mod tests {
 		let deserialized: Vec<ValidatorSet> = serde_json::from_str(s).unwrap();
 		assert_eq!(deserialized.len(), 4);
 
-		assert_eq!(deserialized[0], ValidatorSet::List(vec![Address(H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap())]));
-		assert_eq!(deserialized[1], ValidatorSet::SafeContract(Address(H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap())));
-		assert_eq!(deserialized[2], ValidatorSet::Contract(Address(H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap())));
+		assert_eq!(
+			deserialized[0],
+			ValidatorSet::List(vec![Address(
+				H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap()
+			)])
+		);
+		assert_eq!(
+			deserialized[1],
+			ValidatorSet::SafeContract(Address(
+				H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap()
+			))
+		);
+		assert_eq!(
+			deserialized[2],
+			ValidatorSet::Contract(Address(
+				H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap()
+			))
+		);
 		match deserialized[3] {
 			ValidatorSet::Multi(ref map) => {
 				assert_eq!(map.len(), 3);
 				assert!(map.contains_key(&Uint(U256::from(0))));
 				assert!(map.contains_key(&Uint(U256::from(10))));
 				assert!(map.contains_key(&Uint(U256::from(20))));
-			},
+			}
 			_ => assert!(false),
 		}
 	}

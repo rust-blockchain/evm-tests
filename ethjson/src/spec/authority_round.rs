@@ -38,10 +38,10 @@
 //! }
 //! ```
 
-use std::collections::BTreeMap;
+use super::{StepDuration, ValidatorSet};
 use crate::{bytes::Bytes, hash::Address, uint::Uint};
 use serde::Deserialize;
-use super::{StepDuration, ValidatorSet};
+use std::collections::BTreeMap;
 
 /// Authority params deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -117,11 +117,11 @@ pub struct AuthorityRound {
 mod tests {
 	use std::str::FromStr;
 
-	use ethereum_types::{U256, H160};
+	use ethereum_types::{H160, U256};
 	use serde_json;
 
-	use super::{Address, Uint, StepDuration};
-	use crate::{spec::{validator_set::ValidatorSet, authority_round::AuthorityRound}};
+	use super::{Address, StepDuration, Uint};
+	use crate::spec::{authority_round::AuthorityRound, validator_set::ValidatorSet};
 
 	#[test]
 	fn authority_round_deserialization() {
@@ -148,24 +148,54 @@ mod tests {
 		}"#;
 
 		let deserialized: AuthorityRound = serde_json::from_str(s).unwrap();
-		assert_eq!(deserialized.params.step_duration, StepDuration::Single(Uint(U256::from(2))));
+		assert_eq!(
+			deserialized.params.step_duration,
+			StepDuration::Single(Uint(U256::from(2)))
+		);
 		assert_eq!(
 			deserialized.params.validators,
-			ValidatorSet::List(vec![Address(H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap())]),
+			ValidatorSet::List(vec![Address(
+				H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap()
+			)]),
 		);
 		assert_eq!(deserialized.params.start_step, Some(Uint(U256::from(24))));
 		assert_eq!(deserialized.params.immediate_transitions, None);
-		assert_eq!(deserialized.params.maximum_uncle_count_transition, Some(Uint(10_000_000.into())));
-		assert_eq!(deserialized.params.maximum_uncle_count, Some(Uint(5.into())));
-		assert_eq!(deserialized.params.randomness_contract_address.unwrap(),
+		assert_eq!(
+			deserialized.params.maximum_uncle_count_transition,
+			Some(Uint(10_000_000.into()))
+		);
+		assert_eq!(
+			deserialized.params.maximum_uncle_count,
+			Some(Uint(5.into()))
+		);
+		assert_eq!(
+			deserialized.params.randomness_contract_address.unwrap(),
 			vec![
-				(Uint(10.into()), Address(H160::from_str("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap())),
-				(Uint(20.into()), Address(H160::from_str("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap())),
-			].into_iter().collect());
-		let expected_bglc =
-			[(Uint(10.into()), Address(H160::from_str("1000000000000000000000000000000000000001").unwrap())),
-			 (Uint(20.into()), Address(H160::from_str("2000000000000000000000000000000000000002").unwrap()))];
-		assert_eq!(deserialized.params.block_gas_limit_contract_transitions,
-				   Some(expected_bglc.to_vec().into_iter().collect()));
+				(
+					Uint(10.into()),
+					Address(H160::from_str("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap())
+				),
+				(
+					Uint(20.into()),
+					Address(H160::from_str("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap())
+				),
+			]
+			.into_iter()
+			.collect()
+		);
+		let expected_bglc = [
+			(
+				Uint(10.into()),
+				Address(H160::from_str("1000000000000000000000000000000000000001").unwrap()),
+			),
+			(
+				Uint(20.into()),
+				Address(H160::from_str("2000000000000000000000000000000000000002").unwrap()),
+			),
+		];
+		assert_eq!(
+			deserialized.params.block_gas_limit_contract_transitions,
+			Some(expected_bglc.to_vec().into_iter().collect())
+		);
 	}
 }

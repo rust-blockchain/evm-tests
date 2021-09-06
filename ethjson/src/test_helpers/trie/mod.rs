@@ -23,8 +23,8 @@ pub use self::input::Input;
 /// Type used by `trie` tests
 pub type Test = super::tester::GenericTester<String, Trie>;
 
-use serde::Deserialize;
 use crate::hash::H256;
+use serde::Deserialize;
 
 /// Trie test deserialization.
 #[derive(Debug, Deserialize, PartialEq)]

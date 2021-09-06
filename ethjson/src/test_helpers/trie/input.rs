@@ -16,12 +16,12 @@
 
 //! Trie test input deserialization.
 
-use std::fmt;
-use std::collections::BTreeMap;
-use std::str::FromStr;
 use crate::bytes::Bytes;
+use serde::de::{Error as ErrorTrait, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
-use serde::de::{Error as ErrorTrait, Visitor, MapAccess, SeqAccess};
+use std::collections::BTreeMap;
+use std::fmt;
+use std::str::FromStr;
 
 /// Trie test input.
 #[derive(Debug, PartialEq)]
@@ -32,7 +32,8 @@ pub struct Input {
 
 impl<'a> Deserialize<'a> for Input {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-		where D: Deserializer<'a>
+	where
+		D: Deserializer<'a>,
 	{
 		deserializer.deserialize_any(InputVisitor)
 	}
@@ -47,20 +48,29 @@ impl<'a> Visitor<'a> for InputVisitor {
 		write!(formatter, "a map of bytes into bytes")
 	}
 
-	fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error> where V: MapAccess<'a> {
+	fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+	where
+		V: MapAccess<'a>,
+	{
 		let mut result = BTreeMap::new();
 
 		loop {
 			let key_str: Option<String> = visitor.next_key()?;
 			let key = match key_str {
-				Some(ref k) if k.starts_with("0x") => Bytes::from_str(k).map_err(V::Error::custom)?,
+				Some(ref k) if k.starts_with("0x") => {
+					Bytes::from_str(k).map_err(V::Error::custom)?
+				}
 				Some(k) => Bytes::new(k.into_bytes()),
-				None => { break; }
+				None => {
+					break;
+				}
 			};
 
 			let val_str: Option<String> = visitor.next_value()?;
 			let val = match val_str {
-				Some(ref v) if v.starts_with("0x") => Some(Bytes::from_str(v).map_err(V::Error::custom)?),
+				Some(ref v) if v.starts_with("0x") => {
+					Some(Bytes::from_str(v).map_err(V::Error::custom)?)
+				}
 				Some(v) => Some(Bytes::new(v.into_bytes())),
 				None => None,
 			};
@@ -68,21 +78,24 @@ impl<'a> Visitor<'a> for InputVisitor {
 			result.insert(key, val);
 		}
 
-		let input = Input {
-			data: result
-		};
+		let input = Input { data: result };
 
 		Ok(input)
 	}
 
-	fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error> where V: SeqAccess<'a> {
+	fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+	where
+		V: SeqAccess<'a>,
+	{
 		let mut result = BTreeMap::new();
 
 		loop {
 			let keyval: Option<Vec<Option<String>>> = visitor.next_element()?;
 			let keyval = match keyval {
 				Some(k) => k,
-				_ => { break; },
+				_ => {
+					break;
+				}
 			};
 
 			if keyval.len() != 2 {
@@ -93,13 +106,19 @@ impl<'a> Visitor<'a> for InputVisitor {
 			let val_str = &keyval[1];
 
 			let key = match *key_str {
-				Some(ref k) if k.starts_with("0x") => Bytes::from_str(k).map_err(V::Error::custom)?,
+				Some(ref k) if k.starts_with("0x") => {
+					Bytes::from_str(k).map_err(V::Error::custom)?
+				}
 				Some(ref k) => Bytes::new(k.clone().into_bytes()),
-				None => { break; }
+				None => {
+					break;
+				}
 			};
 
 			let val = match *val_str {
-				Some(ref v) if v.starts_with("0x") => Some(Bytes::from_str(v).map_err(V::Error::custom)?),
+				Some(ref v) if v.starts_with("0x") => {
+					Some(Bytes::from_str(v).map_err(V::Error::custom)?)
+				}
 				Some(ref v) => Some(Bytes::new(v.clone().into_bytes())),
 				None => None,
 			};
@@ -107,9 +126,7 @@ impl<'a> Visitor<'a> for InputVisitor {
 			result.insert(key, val);
 		}
 
-		let input = Input {
-			data: result
-		};
+		let input = Input { data: result };
 
 		Ok(input)
 	}
@@ -129,7 +146,10 @@ mod tests {
 
 		let input: Input = serde_json::from_str(s).unwrap();
 		let mut map = BTreeMap::new();
-		map.insert(Bytes::new(vec![0, 0x45]), Some(Bytes::new(vec![0x01, 0x23, 0x45, 0x67, 0x89])));
+		map.insert(
+			Bytes::new(vec![0, 0x45]),
+			Some(Bytes::new(vec![0x01, 0x23, 0x45, 0x67, 0x89])),
+		);
 		map.insert(Bytes::new(vec![0x62, 0x65]), Some(Bytes::new(vec![0x65])));
 		map.insert(Bytes::new(vec![0x0a]), None);
 		assert_eq!(input.data, map);
@@ -145,7 +165,10 @@ mod tests {
 
 		let input: Input = serde_json::from_str(s).unwrap();
 		let mut map = BTreeMap::new();
-		map.insert(Bytes::new(vec![0, 0x45]), Some(Bytes::new(vec![0x01, 0x23, 0x45, 0x67, 0x89])));
+		map.insert(
+			Bytes::new(vec![0, 0x45]),
+			Some(Bytes::new(vec![0x01, 0x23, 0x45, 0x67, 0x89])),
+		);
 		map.insert(Bytes::new(vec![0x62, 0x65]), Some(Bytes::new(vec![0x65])));
 		map.insert(Bytes::new(vec![0x0a]), None);
 		assert_eq!(input.data, map);

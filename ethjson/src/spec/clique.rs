@@ -16,8 +16,8 @@
 
 //! Clique params deserialization.
 
-use std::num::NonZeroU64;
 use serde::Deserialize;
+use std::num::NonZeroU64;
 
 /// Clique params deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -25,7 +25,7 @@ pub struct CliqueParams {
 	/// period as defined in EIP 225
 	pub period: Option<u64>,
 	/// epoch length as defined in EIP 225
-	pub epoch: Option<NonZeroU64>
+	pub epoch: Option<NonZeroU64>,
 }
 
 /// Clique engine deserialization.

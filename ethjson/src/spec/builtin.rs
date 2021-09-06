@@ -59,7 +59,6 @@ pub struct AltBn128Pairing {
 	pub pair: u64,
 }
 
-
 /// Bls12 pairing price
 #[derive(Debug, PartialEq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
@@ -149,14 +148,23 @@ impl From<BuiltinCompat> for Builtin {
 			PricingCompat::Single(pricing) => {
 				let mut map = BTreeMap::new();
 				let activate_at: u64 = legacy.activate_at.map_or(0, Into::into);
-				map.insert(activate_at, PricingAt { info: None, price: pricing });
+				map.insert(
+					activate_at,
+					PricingAt {
+						info: None,
+						price: pricing,
+					},
+				);
 				map
 			}
 			PricingCompat::Multi(pricings) => {
 				pricings.into_iter().map(|(a, p)| (a.into(), p)).collect()
 			}
 		};
-		Self { name: legacy.name, pricing }
+		Self {
+			name: legacy.name,
+			pricing,
+		}
 	}
 }
 
@@ -184,7 +192,10 @@ pub struct PricingAt {
 
 #[cfg(test)]
 mod tests {
-	use super::{Builtin, BuiltinCompat, Pricing, PricingAt, Linear, Modexp, AltBn128ConstOperations, Bls12G1Multiexp, Bls12G2Multiexp};
+	use super::{
+		AltBn128ConstOperations, Bls12G1Multiexp, Bls12G2Multiexp, Builtin, BuiltinCompat, Linear,
+		Modexp, Pricing, PricingAt,
+	};
 	use maplit::btreemap;
 
 	#[test]
@@ -195,12 +206,15 @@ mod tests {
 		}"#;
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "ecrecover");
-		assert_eq!(builtin.pricing, btreemap![
-			0 => PricingAt {
-				info: None,
-				price: Pricing::Linear(Linear { base: 3000, word: 0 })
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				0 => PricingAt {
+					info: None,
+					price: Pricing::Linear(Linear { base: 3000, word: 0 })
+				}
+			]
+		);
 	}
 
 	#[test]
@@ -219,16 +233,19 @@ mod tests {
 		}"#;
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "ecrecover");
-		assert_eq!(builtin.pricing, btreemap![
-			0 => PricingAt {
-				info: None,
-				price: Pricing::Linear(Linear { base: 3000, word: 0 })
-			},
-			500 => PricingAt {
-				info: Some(String::from("enable fake EIP at block 500")),
-				price: Pricing::Linear(Linear { base: 10, word: 0 })
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				0 => PricingAt {
+					info: None,
+					price: Pricing::Linear(Linear { base: 3000, word: 0 })
+				},
+				500 => PricingAt {
+					info: Some(String::from("enable fake EIP at block 500")),
+					price: Pricing::Linear(Linear { base: 10, word: 0 })
+				}
+			]
+		);
 	}
 
 	#[test]
@@ -240,12 +257,15 @@ mod tests {
 		}"#;
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "blake2_f");
-		assert_eq!(builtin.pricing, btreemap![
-			0xffffff => PricingAt {
-				info: None,
-				price: Pricing::Blake2F { gas_per_round: 123 }
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				0xffffff => PricingAt {
+					info: None,
+					price: Pricing::Blake2F { gas_per_round: 123 }
+				}
+			]
+		);
 	}
 
 	#[test]
@@ -260,14 +280,17 @@ mod tests {
 		}"#;
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "alt_bn128_mul");
-		assert_eq!(builtin.pricing, btreemap![
-			100500 => PricingAt {
-				info: None,
-				price: Pricing::AltBn128ConstOperations(AltBn128ConstOperations {
-					price: 123,
-				}),
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				100500 => PricingAt {
+					info: None,
+					price: Pricing::AltBn128ConstOperations(AltBn128ConstOperations {
+						price: 123,
+					}),
+				}
+			]
+		);
 	}
 
 	#[test]
@@ -280,12 +303,15 @@ mod tests {
 
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "late_start");
-		assert_eq!(builtin.pricing, btreemap![
-			100_000 => PricingAt {
-				info: None,
-				price: Pricing::Modexp(Modexp { divisor: 5, is_eip_2565: false })
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				100_000 => PricingAt {
+					info: None,
+					price: Pricing::Modexp(Modexp { divisor: 5, is_eip_2565: false })
+				}
+			]
+		);
 	}
 
 	#[test]
@@ -300,14 +326,17 @@ mod tests {
 		}"#;
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "bls12_381_g1_multiexp");
-		assert_eq!(builtin.pricing, btreemap![
-			10000000 => PricingAt {
-				info: None,
-				price: Pricing::Bls12G1Multiexp(Bls12G1Multiexp{
-						base: 12000
-				}),
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				10000000 => PricingAt {
+					info: None,
+					price: Pricing::Bls12G1Multiexp(Bls12G1Multiexp{
+							base: 12000
+					}),
+				}
+			]
+		);
 	}
 
 	#[test]
@@ -322,13 +351,16 @@ mod tests {
 		}"#;
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
 		assert_eq!(builtin.name, "bls12_381_g2_multiexp");
-		assert_eq!(builtin.pricing, btreemap![
-			10000000 => PricingAt {
-				info: None,
-				price: Pricing::Bls12G2Multiexp(Bls12G2Multiexp{
-						base: 55000
-				}),
-			}
-		]);
+		assert_eq!(
+			builtin.pricing,
+			btreemap![
+				10000000 => PricingAt {
+					info: None,
+					price: Pricing::Bls12G2Multiexp(Bls12G2Multiexp{
+							base: 55000
+					}),
+				}
+			]
+		);
 	}
 }

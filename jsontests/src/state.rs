@@ -1,14 +1,16 @@
+use crate::utils::*;
+use ethjson::spec::ForkSpec;
+use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
+use evm::executor::{
+	self, MemoryStackState, PrecompileOutput, StackExecutor, StackSubstateMetadata,
+};
+use evm::{Config, Context, ExitError, ExitSucceed};
+use lazy_static::lazy_static;
+use parity_crypto::publickey;
+use primitive_types::{H160, H256, U256};
+use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
-use ethjson::spec::ForkSpec;
-use serde::Deserialize;
-use primitive_types::{H160, H256, U256};
-use evm::{Config, ExitSucceed, ExitError, Context};
-use evm::executor::{self, StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput};
-use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
-use parity_crypto::publickey;
-use lazy_static::lazy_static;
-use crate::utils::*;
 
 #[derive(Deserialize, Debug)]
 pub struct Test(ethjson::test_helpers::state::State);
@@ -21,7 +23,10 @@ impl Test {
 	pub fn unwrap_caller(&self) -> H160 {
 		let secret_key: H256 = self.0.transaction.secret.clone().unwrap().into();
 		let secret = publickey::Secret::import_key(&secret_key[..]).unwrap();
-		let public = publickey::KeyPair::from_secret(secret).unwrap().public().clone();
+		let public = publickey::KeyPair::from_secret(secret)
+			.unwrap()
+			.public()
+			.clone();
 		let sender = publickey::public_to_address(&public);
 
 		sender
@@ -54,12 +59,13 @@ lazy_static! {
 
 macro_rules! precompile_entry {
 	($map:expr, $builtins:expr, $index:expr) => {
-		let x: fn(&[u8], Option<u64>, &Context, bool) -> Result<PrecompileOutput, ExitError> = |input: &[u8], gas_limit: Option<u64>, _context: &Context, _is_static: bool| {
-			let builtin = $builtins.get(&H160::from_low_u64_be($index)).unwrap();
-			Self::exec_as_precompile(builtin, input, gas_limit)
-		};
+		let x: fn(&[u8], Option<u64>, &Context, bool) -> Result<PrecompileOutput, ExitError> =
+			|input: &[u8], gas_limit: Option<u64>, _context: &Context, _is_static: bool| {
+				let builtin = $builtins.get(&H160::from_low_u64_be($index)).unwrap();
+				Self::exec_as_precompile(builtin, input, gas_limit)
+			};
 		$map.insert(H160::from_low_u64_be($index), x);
-	}
+	};
 }
 
 pub struct JsonPrecompile;
@@ -101,12 +107,22 @@ impl JsonPrecompile {
 		let reader = std::fs::File::open(spec_path).unwrap();
 		let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> =
 			serde_json::from_reader(reader).unwrap();
-		builtins.into_iter().map(|(address, builtin)| {
-			(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
-		}).collect()
+		builtins
+			.into_iter()
+			.map(|(address, builtin)| {
+				(
+					address.into(),
+					ethjson::spec::Builtin::from(builtin).try_into().unwrap(),
+				)
+			})
+			.collect()
 	}
 
-	fn exec_as_precompile(builtin: &ethcore_builtin::Builtin, input: &[u8], gas_limit: Option<u64>) -> Result<PrecompileOutput, ExitError> {
+	fn exec_as_precompile(
+		builtin: &ethcore_builtin::Builtin,
+		input: &[u8],
+		gas_limit: Option<u64>,
+	) -> Result<PrecompileOutput, ExitError> {
 		let cost = builtin.cost(input, 0);
 
 		if let Some(target_gas) = gas_limit {
@@ -151,8 +167,8 @@ fn test_run(name: &str, test: Test) {
 			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
 			spec => {
 				println!("Skip spec {:?}", spec);
-				continue
-			},
+				continue;
+			}
 		};
 
 		let original_state = test.unwrap_to_pre_state();
@@ -168,22 +184,21 @@ fn test_run(name: &str, test: Test) {
 			let data: Vec<u8> = transaction.data.into();
 
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
-			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
+			let metadata =
+				StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 			let executor_state = MemoryStackState::new(metadata, &backend);
 			let precompile = JsonPrecompile::precompile(spec).unwrap();
-			let mut executor = StackExecutor::new_with_precompile(
-				executor_state,
-				&gasometer_config,
-				precompile,
-			);
+			let mut executor =
+				StackExecutor::new_with_precompile(executor_state, &gasometer_config, precompile);
 			let total_fee = vicinity.gas_price * gas_limit;
 
 			executor.state_mut().withdraw(caller, total_fee).unwrap();
 
-            let access_list = transaction.access_list
-                .into_iter()
-                .map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
-                .collect();
+			let access_list = transaction
+				.access_list
+				.into_iter()
+				.map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
+				.collect();
 
 			match transaction.to {
 				ethjson::maybe::MaybeEmpty::Some(to) => {
@@ -196,25 +211,22 @@ fn test_run(name: &str, test: Test) {
 						value,
 						data,
 						gas_limit,
-                        access_list,
+						access_list,
 					);
-				},
+				}
 				ethjson::maybe::MaybeEmpty::None => {
 					let code = data;
 					let value = transaction.value.into();
 
-					let _reason = executor.transact_create(
-						caller,
-						value,
-						code,
-						gas_limit,
-                        access_list,
-					);
-				},
+					let _reason =
+						executor.transact_create(caller, value, code, gas_limit, access_list);
+				}
 			}
 
 			let actual_fee = executor.fee(vicinity.gas_price);
-			executor.state_mut().deposit(vicinity.block_coinbase, actual_fee);
+			executor
+				.state_mut()
+				.deposit(vicinity.block_coinbase, actual_fee);
 			executor.state_mut().deposit(caller, total_fee - actual_fee);
 			let (values, logs) = executor.into_state().deconstruct();
 			backend.apply(values, logs, delete_empty);

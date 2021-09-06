@@ -16,7 +16,12 @@
 
 //! Transaction deserialization.
 
-use crate::{bytes::Bytes, hash::{Address, H256}, maybe::MaybeEmpty, uint::Uint};
+use crate::{
+	bytes::Bytes,
+	hash::{Address, H256},
+	maybe::MaybeEmpty,
+	uint::Uint,
+};
 use serde::Deserialize;
 
 /// Unsigned transaction with signing information deserialization.
@@ -25,9 +30,9 @@ use serde::Deserialize;
 pub struct Transaction {
 	/// Transaction data.
 	pub data: Bytes,
-    /// Transaction access list (see EIP-2930).
-    #[serde(default)]
-    pub access_list: Vec<(Address, Vec<H256>)>,
+	/// Transaction access list (see EIP-2930).
+	#[serde(default)]
+	pub access_list: Vec<(Address, Vec<H256>)>,
 	/// Gas limit.
 	pub gas_limit: Uint,
 	/// Gas price.
@@ -54,7 +59,7 @@ pub struct Transaction {
 
 #[cfg(test)]
 mod tests {
-	use super::{Bytes, H256, MaybeEmpty, Transaction, Uint};
+	use super::{Bytes, MaybeEmpty, Transaction, Uint, H256};
 	use ethereum_types::{H256 as Eth256, U256};
 
 	#[test]

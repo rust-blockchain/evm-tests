@@ -18,8 +18,8 @@
 
 use crate::{
 	bytes::Bytes,
-	hash::{H64, Address, H256, Bloom},
-	uint::Uint
+	hash::{Address, Bloom, H256, H64},
+	uint::Uint,
 };
 use serde::Deserialize;
 

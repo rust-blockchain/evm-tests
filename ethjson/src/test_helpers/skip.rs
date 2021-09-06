@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Open Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// Test to skip (only if issue ongoing)
 #[derive(Debug, PartialEq, Deserialize)]
@@ -28,7 +28,6 @@ pub struct SkipTests {
 	pub legacy_block: Vec<SkipBlockchainTest>,
 	/// Legacy state tests
 	pub legacy_state: Vec<SkipStateTest>,
-
 }
 
 /// Block test to skip.
@@ -50,7 +49,7 @@ pub struct SkipStateTest {
 	/// Test failing name.
 	pub failing: String,
 	/// Items failing for the test.
-	pub subtests: BTreeMap<String, StateSkipSubStates>
+	pub subtests: BTreeMap<String, StateSkipSubStates>,
 }
 
 /// State subtest to skip.
@@ -74,7 +73,10 @@ impl SkipTests {
 	}
 
 	/// Loads test from json.
-	pub fn load<R>(reader: R) -> Result<Self, serde_json::Error> where R: std::io::Read {
+	pub fn load<R>(reader: R) -> Result<Self, serde_json::Error>
+	where
+		R: std::io::Read,
+	{
 		serde_json::from_reader(reader)
 	}
 }

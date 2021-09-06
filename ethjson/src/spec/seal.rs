@@ -16,7 +16,11 @@
 
 //! Spec seal deserialization.
 
-use crate::{bytes::Bytes, hash::{H64, H256, H520}, uint::Uint};
+use crate::{
+	bytes::Bytes,
+	hash::{H256, H520, H64},
+	uint::Uint,
+};
 use serde::Deserialize;
 
 /// Ethereum seal.
@@ -69,9 +73,9 @@ pub enum Seal {
 
 #[cfg(test)]
 mod tests {
+	use super::{AuthorityRoundSeal, Bytes, Ethereum, Seal, TendermintSeal, Uint, H256, H520, H64};
+	use ethereum_types::{H256 as Eth256, H520 as Eth520, H64 as Eth64, U256};
 	use std::str::FromStr;
-	use super::{AuthorityRoundSeal, Bytes, Ethereum, H64, H256, H520, TendermintSeal, Seal, Uint};
-	use ethereum_types::{U256, H64 as Eth64, H256 as Eth256, H520 as Eth520};
 
 	#[test]
 	fn seal_deserialization() {
@@ -101,15 +105,28 @@ mod tests {
 		assert_eq!(deserialized.len(), 4);
 
 		// [0]
-		assert_eq!(deserialized[0], Seal::Ethereum(Ethereum {
-			nonce: H64(Eth64::from_str("0000000000000042").unwrap()),
-			mix_hash: H256(Eth256::from_str("1000000000000000000000000000000000000000000000000000000000000001").unwrap())
-		}));
+		assert_eq!(
+			deserialized[0],
+			Seal::Ethereum(Ethereum {
+				nonce: H64(Eth64::from_str("0000000000000042").unwrap()),
+				mix_hash: H256(
+					Eth256::from_str(
+						"1000000000000000000000000000000000000000000000000000000000000001"
+					)
+					.unwrap()
+				)
+			})
+		);
 
 		// [1]
-		assert_eq!(deserialized[1], Seal::Generic(Bytes::new(vec![
-			0xe0, 0x11, 0xbb, 0xe8, 0xdb, 0x4e, 0x34, 0x7b, 0x4e, 0x8c, 0x93, 0x7c, 0x1c, 0x83, 0x70, 0xe4,
-			0xb5, 0xed, 0x33, 0xad, 0xb3, 0xdb, 0x69, 0xcb, 0xdb, 0x7a, 0x38, 0xe1, 0xe5, 0x0b, 0x1b, 0x82, 0xfa])));
+		assert_eq!(
+			deserialized[1],
+			Seal::Generic(Bytes::new(vec![
+				0xe0, 0x11, 0xbb, 0xe8, 0xdb, 0x4e, 0x34, 0x7b, 0x4e, 0x8c, 0x93, 0x7c, 0x1c, 0x83,
+				0x70, 0xe4, 0xb5, 0xed, 0x33, 0xad, 0xb3, 0xdb, 0x69, 0xcb, 0xdb, 0x7a, 0x38, 0xe1,
+				0xe5, 0x0b, 0x1b, 0x82, 0xfa
+			]))
+		);
 
 		// [2]
 		assert_eq!(deserialized[2], Seal::AuthorityRound(AuthorityRoundSeal {

@@ -16,8 +16,8 @@
 
 //! Authority params deserialization.
 
-use crate::uint::Uint;
 use super::ValidatorSet;
+use crate::uint::Uint;
 use serde::Deserialize;
 
 /// Authority params deserialization.
@@ -41,10 +41,10 @@ pub struct BasicAuthority {
 
 #[cfg(test)]
 mod tests {
-	use std::str::FromStr;
 	use super::{BasicAuthority, Uint};
-	use ethereum_types::{U256, H160};
 	use crate::{hash::Address, spec::validator_set::ValidatorSet};
+	use ethereum_types::{H160, U256};
+	use std::str::FromStr;
 
 	#[test]
 	fn basic_authority_deserialization() {
@@ -60,7 +60,9 @@ mod tests {
 		let deserialized: BasicAuthority = serde_json::from_str(s).unwrap();
 
 		assert_eq!(deserialized.params.duration_limit, Uint(U256::from(0x0d)));
-		let vs = ValidatorSet::List(vec![Address(H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap())]);
+		let vs = ValidatorSet::List(vec![Address(
+			H160::from_str("c6d9d2cd449a754c494264e1809c50e34d64562b").unwrap(),
+		)]);
 		assert_eq!(deserialized.params.validators, vs);
 	}
 }

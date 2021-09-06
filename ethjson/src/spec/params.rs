@@ -18,8 +18,8 @@
 
 use crate::{
 	bytes::Bytes,
-	hash::{H256, Address},
-	uint::{self, Uint}
+	hash::{Address, H256},
+	uint::{self, Uint},
 };
 use serde::Deserialize;
 
@@ -117,9 +117,9 @@ pub struct Params {
 	/// See `CommonParams` docs.
 	pub nonce_cap_increment: Option<Uint>,
 	/// See `CommonParams` docs.
-	pub remove_dust_contracts : Option<bool>,
+	pub remove_dust_contracts: Option<bool>,
 	/// See `CommonParams` docs.
-	#[serde(deserialize_with="uint::validate_non_zero")]
+	#[serde(deserialize_with = "uint::validate_non_zero")]
 	pub gas_limit_bound_divisor: Uint,
 	/// See `CommonParams` docs.
 	pub registrar: Option<Address>,
@@ -172,10 +172,16 @@ mod tests {
 		assert_eq!(deserialized.chain_id, Some(Uint(U256::from(0x15))));
 		assert_eq!(deserialized.subprotocol_name, Some("exp".to_owned()));
 		assert_eq!(deserialized.min_gas_limit, Uint(U256::from(0x1388)));
-		assert_eq!(deserialized.account_start_nonce, Some(Uint(U256::from(0x01))));
+		assert_eq!(
+			deserialized.account_start_nonce,
+			Some(Uint(U256::from(0x01)))
+		);
 		assert_eq!(deserialized.gas_limit_bound_divisor, Uint(U256::from(0x20)));
 		assert_eq!(deserialized.max_code_size, Some(Uint(U256::from(0x1000))));
-		assert_eq!(deserialized.wasm_activation_transition, Some(Uint(U256::from(0x1010))));
+		assert_eq!(
+			deserialized.wasm_activation_transition,
+			Some(Uint(U256::from(0x1010)))
+		);
 	}
 
 	#[test]

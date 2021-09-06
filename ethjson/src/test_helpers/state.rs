@@ -19,17 +19,17 @@
 /// Type for running `State` tests
 pub type Test = super::tester::GenericTester<String, State>;
 
-use std::collections::BTreeMap;
-use serde::Deserialize;
 use crate::{
 	bytes::Bytes,
 	hash::{Address, H256},
 	maybe::MaybeEmpty,
-	uint::Uint,
 	spec::{ForkSpec, State as AccountState},
 	transaction::Transaction,
-	vm::Env
+	uint::Uint,
+	vm::Env,
 };
+use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// State test deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
@@ -52,9 +52,9 @@ pub struct State {
 pub struct MultiTransaction {
 	/// Transaction data set.
 	pub data: Vec<Bytes>,
-    /// Access lists (see EIP-2930)
-    #[serde(default)]
-    pub access_lists: Vec<AccessList>,
+	/// Access lists (see EIP-2930)
+	#[serde(default)]
+	pub access_lists: Vec<AccessList>,
 	/// Gas limit set.
 	pub gas_limit: Vec<Uint>,
 	/// Gas price.
@@ -73,12 +73,15 @@ pub struct MultiTransaction {
 impl MultiTransaction {
 	/// Build transaction with given indexes.
 	pub fn select(&self, indexes: &PostStateIndexes) -> Transaction {
-        let data_index = indexes.data as usize;
-        let access_list = if data_index < self.access_lists.len() {
-            self.access_lists[data_index].iter().map(|a| (a.address, a.storage_keys.clone())).collect()
-        } else {
-            Vec::new()
-        };
+		let data_index = indexes.data as usize;
+		let access_list = if data_index < self.access_lists.len() {
+			self.access_lists[data_index]
+				.iter()
+				.map(|a| (a.address, a.storage_keys.clone()))
+				.collect()
+		} else {
+			Vec::new()
+		};
 		Transaction {
 			data: self.data[data_index].clone(),
 			gas_limit: self.gas_limit[indexes.gas as usize],
@@ -90,7 +93,7 @@ impl MultiTransaction {
 			s: Default::default(),
 			v: Default::default(),
 			secret: self.secret.clone(),
-            access_list,
+			access_list,
 		}
 	}
 }
@@ -103,10 +106,10 @@ pub type AccessList = Vec<AccessListTuple>;
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessListTuple {
-    /// Address to access
-    pub address: Address,
-    /// Keys (slots) to access at that address
-    pub storage_keys: Vec<H256>,
+	/// Address to access
+	pub address: Address,
+	/// Keys (slots) to access at that address
+	pub storage_keys: Vec<H256>,
 }
 
 /// State test indexes deserialization.
@@ -131,8 +134,8 @@ pub struct PostStateResult {
 
 #[cfg(test)]
 mod tests {
-	use serde_json;
 	use super::{MultiTransaction, State};
+	use serde_json;
 
 	#[test]
 	fn multi_transaction_deserialization() {

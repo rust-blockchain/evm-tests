@@ -16,10 +16,10 @@
 
 //! Spec deserialization.
 
-use std::io::Read;
-use crate::spec::{Params, Genesis, Engine, State, HardcodedSync};
+use crate::spec::{Engine, Genesis, HardcodedSync, Params, State};
 use serde::Deserialize;
 use serde_json::Error;
+use std::io::Read;
 
 /// Fork spec definition
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
@@ -52,10 +52,10 @@ pub enum ForkSpec {
 	HomesteadToDaoAt5,
 	/// EIP158/EIP161 transition test-net
 	HomesteadToEIP150At5,
-	 /// ConstantinopleFix transition test-net 
+	/// ConstantinopleFix transition test-net
 	ByzantiumToConstantinopleFixAt5,
 	/// Istanbul transition test-net
-	ConstantinopleFixToIstanbulAt5
+	ConstantinopleFixToIstanbulAt5,
 }
 
 /// Spec deserialization.
@@ -83,7 +83,10 @@ pub struct Spec {
 
 impl Spec {
 	/// Loads test from json.
-	pub fn load<R>(reader: R) -> Result<Self, Error> where R: Read {
+	pub fn load<R>(reader: R) -> Result<Self, Error>
+	where
+		R: Read,
+	{
 		serde_json::from_reader(reader)
 	}
 }

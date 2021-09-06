@@ -17,17 +17,17 @@
 //! AVX2 implementation of the blake2b compression function.
 use crate::IV;
 
+use arrayref::{array_refs, mut_array_refs};
 #[cfg(target_arch = "x86")]
 use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
-use arrayref::{array_refs, mut_array_refs};
 
 // Adapted from https://github.com/rust-lang-nursery/stdsimd/pull/479.
 macro_rules! _MM_SHUFFLE {
-    ($z:expr, $y:expr, $x:expr, $w:expr) => {
-        ($z << 6) | ($y << 4) | ($x << 2) | $w
-    };
+	($z:expr, $y:expr, $x:expr, $w:expr) => {
+		($z << 6) | ($y << 4) | ($x << 2) | $w
+	};
 }
 
 /// The Blake2b compression function F. See https://tools.ietf.org/html/rfc7693#section-3.2
@@ -79,7 +79,13 @@ macro_rules! _MM_SHUFFLE {
 /// ```
 ///
 #[target_feature(enable = "avx2")]
-pub unsafe fn compress(state: &mut [u64; 8], message: [u64; 16], count: [u64; 2], f: bool, rounds: usize) {
+pub unsafe fn compress(
+	state: &mut [u64; 8],
+	message: [u64; 16],
+	count: [u64; 2],
+	f: bool,
+	rounds: usize,
+) {
 	// get a mutable reference to state[0..4], state[4..]
 	let (state_low, state_high) = mut_array_refs!(state, 4, 4);
 	// get a reference to IV[0..4], IV[4..]
@@ -91,18 +97,9 @@ pub unsafe fn compress(state: &mut [u64; 8], message: [u64; 16], count: [u64; 2]
 	let mut c = loadu(iv_low);
 
 	// !a = xor(a, xor(a, !a))
-	let inverse = if f {
-		iv_high[3] ^ !iv_high[3]
-	} else {
-		0
-	};
+	let inverse = if f { iv_high[3] ^ !iv_high[3] } else { 0 };
 
-	let flags = set4(
-		count[0],
-		count[1],
-		inverse,
-		0,
-	);
+	let flags = set4(count[0], count[1], inverse, 0);
 
 	let mut d = xor(loadu(iv_high), flags);
 
@@ -356,7 +353,6 @@ pub unsafe fn compress(state: &mut [u64; 8], message: [u64; 16], count: [u64; 2]
 	storeu(b, state_high);
 }
 
-
 #[inline(always)]
 unsafe fn loadu(src: *const [u64; 4]) -> __m256i {
 	// This is an unaligned load, so the pointer cast is allowed.
@@ -458,7 +454,6 @@ unsafe fn undiagonalize(a: &mut __m256i, _b: &mut __m256i, c: &mut __m256i, d: &
 	*d = _mm256_permute4x64_epi64(*d, _MM_SHUFFLE!(1, 0, 3, 2));
 	*c = _mm256_permute4x64_epi64(*c, _MM_SHUFFLE!(2, 1, 0, 3));
 }
-
 
 #[cfg(test)]
 mod tests {

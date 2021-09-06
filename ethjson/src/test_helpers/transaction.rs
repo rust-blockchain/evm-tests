@@ -16,9 +16,13 @@
 
 //! Transaction test deserialization.
 
-use std::collections::BTreeMap;
-use crate::{bytes::Bytes, hash::{Address, H256}, spec::ForkSpec};
+use crate::{
+	bytes::Bytes,
+	hash::{Address, H256},
+	spec::ForkSpec,
+};
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// Type for running `Transaction` tests
 pub type Test = super::tester::GenericTester<String, TransactionTest>;

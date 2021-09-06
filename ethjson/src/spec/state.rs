@@ -16,13 +16,13 @@
 
 //! Blockchain state deserializer.
 
-use std::collections::BTreeMap;
 use crate::{
 	bytes::Bytes,
 	hash::{Address, H256},
-	spec::{Account, Builtin}
+	spec::{Account, Builtin},
 };
 use serde::Deserialize;
+use std::collections::BTreeMap;
 
 /// Recent JSON tests can be either a map or a hash (represented by a string).
 /// See https://github.com/ethereum/tests/issues/637
@@ -48,12 +48,10 @@ impl State {
 	pub fn builtins(&self) -> BTreeMap<Address, Builtin> {
 		match &self.0 {
 			HashOrMap::Hash(_) => BTreeMap::default(),
-			HashOrMap::Map(map) => {
-				map.iter().filter_map(|(add, ref acc)| {
-					acc.builtin.clone().map(|b| (add.clone(), b.into()))
-				}).collect()
-			}
-
+			HashOrMap::Map(map) => map
+				.iter()
+				.filter_map(|(add, ref acc)| acc.builtin.clone().map(|b| (add.clone(), b.into())))
+				.collect(),
 		}
 	}
 
@@ -61,12 +59,10 @@ impl State {
 	pub fn constructors(&self) -> BTreeMap<Address, Bytes> {
 		match &self.0 {
 			HashOrMap::Hash(_) => BTreeMap::default(),
-			HashOrMap::Map(map) => {
-				map.iter().filter_map(|(add, ref acc)| {
-					acc.constructor.clone().map(|b| (add.clone(), b))
-				}).collect()
-			}
-
+			HashOrMap::Map(map) => map
+				.iter()
+				.filter_map(|(add, ref acc)| acc.constructor.clone().map(|b| (add.clone(), b)))
+				.collect(),
 		}
 	}
 }

@@ -38,8 +38,8 @@ fn g(v: &mut [u64], a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) {
 /// parameter is modified by the function.
 pub fn compress(h: &mut [u64; 8], m: [u64; 16], t: [u64; 2], f: bool, rounds: usize) {
 	let mut v = [0u64; 16];
-	v[..8].copy_from_slice(h);    // First half from state.
-	v[8..].copy_from_slice(&IV);  // Second half from IV.
+	v[..8].copy_from_slice(h); // First half from state.
+	v[8..].copy_from_slice(&IV); // Second half from IV.
 
 	v[12] ^= t[0];
 	v[13] ^= t[1];

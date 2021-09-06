@@ -19,8 +19,7 @@
 use crate::{
 	bytes::Bytes,
 	hash::H256,
-	spec::{Ethereum, ForkSpec, Genesis, Seal, State}
-
+	spec::{Ethereum, ForkSpec, Genesis, Seal, State},
 };
 use serde::Deserialize;
 
@@ -71,7 +70,7 @@ pub struct BlockChain {
 	/// Network.
 	pub network: ForkSpec,
 	#[serde(default)]
-	#[serde(rename="sealEngine")]
+	#[serde(rename = "sealEngine")]
 	/// Engine
 	pub engine: Engine,
 }

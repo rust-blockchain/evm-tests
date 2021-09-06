@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Open Ethereum.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod portable;
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub mod avx2;
+pub mod portable;
 
 /// The precomputed values for BLAKE2b [from the spec](https://tools.ietf.org/html/rfc7693#section-2.7)
 /// There are 10 16-byte arrays - one for each round
@@ -34,12 +34,17 @@ const SIGMA: [[usize; 16]; 10] = [
 	[10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0],
 ];
 
-
 /// IV is the initialization vector for BLAKE2b. See https://tools.ietf.org/html/rfc7693#section-2.6
 /// for details.
 const IV: [u64; 8] = [
-	0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
-	0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
+	0x6a09e667f3bcc908,
+	0xbb67ae8584caa73b,
+	0x3c6ef372fe94f82b,
+	0xa54ff53a5f1d36f1,
+	0x510e527fade682d1,
+	0x9b05688c2b3e6c1f,
+	0x1f83d9abfb41bd6b,
+	0x5be0cd19137e2179,
 ];
 
 /// blake2b compression function
@@ -47,18 +52,15 @@ pub fn compress(state: &mut [u64; 8], message: [u64; 16], count: [u64; 2], f: bo
 	#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 	{
 		if is_x86_feature_detected!("avx2") {
-			unsafe {
-				return avx2::compress(state, message, count, f, rounds)
-			}
+			unsafe { return avx2::compress(state, message, count, f, rounds) }
 		} else {
-			return portable::compress(state, message, count, f, rounds)
+			return portable::compress(state, message, count, f, rounds);
 		};
 	}
 
 	#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
 	portable::compress(state, message, count, f, rounds);
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -72,27 +74,46 @@ mod tests {
 	fn test_blake2_f() {
 		// test from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-152.md#example-usage-in-solidity
 		let mut h_in = [
-			0x6a09e667f2bdc948_u64, 0xbb67ae8584caa73b_u64,
-			0x3c6ef372fe94f82b_u64, 0xa54ff53a5f1d36f1_u64,
-			0x510e527fade682d1_u64, 0x9b05688c2b3e6c1f_u64,
-			0x1f83d9abfb41bd6b_u64, 0x5be0cd19137e2179_u64,
+			0x6a09e667f2bdc948_u64,
+			0xbb67ae8584caa73b_u64,
+			0x3c6ef372fe94f82b_u64,
+			0xa54ff53a5f1d36f1_u64,
+			0x510e527fade682d1_u64,
+			0x9b05688c2b3e6c1f_u64,
+			0x1f83d9abfb41bd6b_u64,
+			0x5be0cd19137e2179_u64,
 		];
 
 		let m = [
-			0x0000000000636261_u64, 0x0000000000000000_u64, 0x0000000000000000_u64,
-			0x0000000000000000_u64, 0x0000000000000000_u64, 0x0000000000000000_u64,
-			0x0000000000000000_u64, 0x0000000000000000_u64, 0x0000000000000000_u64,
-			0x0000000000000000_u64, 0x0000000000000000_u64, 0x0000000000000000_u64,
-			0x0000000000000000_u64, 0x0000000000000000_u64, 0x0000000000000000_u64,
+			0x0000000000636261_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
+			0x0000000000000000_u64,
 			0x0000000000000000_u64,
 		];
 		let c = [3, 0];
 		let f = true;
 		let rounds = 12;
 		let h_out: [u64; 8] = [
-			0x0D4D1C983FA580BA_u64, 0xE9F6129FB697276A_u64, 0xB7C45A68142F214C_u64,
-			0xD1A2FFDB6FBB124B_u64, 0x2D79AB2A39C5877D_u64, 0x95CC3345DED552C2_u64,
-			0x5A92F1DBA88AD318_u64, 0x239900D4ED8623B9_u64,
+			0x0D4D1C983FA580BA_u64,
+			0xE9F6129FB697276A_u64,
+			0xB7C45A68142F214C_u64,
+			0xD1A2FFDB6FBB124B_u64,
+			0x2D79AB2A39C5877D_u64,
+			0x95CC3345DED552C2_u64,
+			0x5A92F1DBA88AD318_u64,
+			0x239900D4ED8623B9_u64,
 		];
 
 		// portable
@@ -100,10 +121,14 @@ mod tests {
 		assert_eq!(h_in, h_out);
 
 		let mut h_in = [
-			0x6a09e667f2bdc948_u64, 0xbb67ae8584caa73b_u64,
-			0x3c6ef372fe94f82b_u64, 0xa54ff53a5f1d36f1_u64,
-			0x510e527fade682d1_u64, 0x9b05688c2b3e6c1f_u64,
-			0x1f83d9abfb41bd6b_u64, 0x5be0cd19137e2179_u64,
+			0x6a09e667f2bdc948_u64,
+			0xbb67ae8584caa73b_u64,
+			0x3c6ef372fe94f82b_u64,
+			0xa54ff53a5f1d36f1_u64,
+			0x510e527fade682d1_u64,
+			0x9b05688c2b3e6c1f_u64,
+			0x1f83d9abfb41bd6b_u64,
+			0x5be0cd19137e2179_u64,
 		];
 
 		// avx
@@ -120,10 +145,11 @@ mod tests {
 
 	fn to_u64_slice(vec: &[u8], slice: &mut [u64]) {
 		vec.chunks(8).enumerate().for_each(|(index, val)| {
-			slice[index] = u64::from_le_bytes([val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7]])
+			slice[index] = u64::from_le_bytes([
+				val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7],
+			])
 		})
 	}
-
 
 	#[test]
 	fn test_vectors_from_eip() {
@@ -167,7 +193,7 @@ mod tests {
 			let f = match bytes[212] {
 				1 => true,
 				0 => false,
-				_ => unreachable!()
+				_ => unreachable!(),
 			};
 
 			to_u64_slice(&bytes[4..68], &mut h);
