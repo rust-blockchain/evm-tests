@@ -639,6 +639,7 @@ dependencies = [
  "ethjson",
  "evm",
  "hex",
+ "lazy_static",
  "parity-bytes",
  "parity-crypto",
  "primitive-types 0.10.1",

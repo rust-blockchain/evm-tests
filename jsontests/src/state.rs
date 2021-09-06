@@ -1,11 +1,13 @@
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use ethjson::spec::ForkSpec;
 use serde::Deserialize;
 use primitive_types::{H160, H256, U256};
 use evm::{Config, ExitSucceed, ExitError, Context};
-use evm::executor::{StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput, Precompiles};
+use evm::executor::{self, StackExecutor, MemoryStackState, StackSubstateMetadata, PrecompileOutput};
 use evm::backend::{MemoryAccount, ApplyBackend, MemoryVicinity, MemoryBackend};
 use parity_crypto::publickey;
+use lazy_static::lazy_static;
 use crate::utils::*;
 
 #[derive(Deserialize, Debug)]
@@ -40,49 +42,89 @@ impl Test {
 	}
 }
 
-pub struct JsonPrecompile {
-	pub addresses: Vec<H160>,
-	pub spec_path: &'static str,
+lazy_static! {
+	static ref ISTANBUL_BUILTINS: BTreeMap<H160, ethcore_builtin::Builtin> =
+		JsonPrecompile::builtins("./res/istanbul_builtins.json");
 }
 
-impl<'config> Precompiles for JsonPrecompile {
-	fn run<S>(&self, address: H160, input: &[u8], gas_limit: Option<u64>, _context: &Context, _state: &mut S, _is_static: bool) -> Option<Result<PrecompileOutput, ExitError>> {
-		use ethcore_builtin::*;
-		use parity_bytes::BytesRef;
+lazy_static! {
+	static ref BERLIN_BUILTINS: BTreeMap<H160, ethcore_builtin::Builtin> =
+		JsonPrecompile::builtins("./res/berlin_builtins.json");
+}
 
-		let reader = std::fs::File::open(self.spec_path).unwrap();
-		let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> =
-			serde_json::from_reader(reader).unwrap();
-		let builtins = builtins.into_iter().map(|(address, builtin)| {
-			(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
-		}).collect::<BTreeMap<H160, Builtin>>();
+macro_rules! precompile_entry {
+	($map:expr, $builtins:expr, $index:expr) => {
+		let x: fn(&[u8], Option<u64>, &Context, bool) -> Result<PrecompileOutput, ExitError> = |input: &[u8], gas_limit: Option<u64>, _context: &Context, _is_static: bool| {
+			let builtin = $builtins.get(&H160::from_low_u64_be($index)).unwrap();
+			Self::exec_as_precompile(builtin, input, gas_limit)
+		};
+		$map.insert(H160::from_low_u64_be($index), x);
+	}
+}
 
-		if let Some(builtin) = builtins.get(&address) {
-			let cost = builtin.cost(input, 0);
+pub struct JsonPrecompile;
 
-			if let Some(target_gas) = gas_limit {
-				if cost > U256::from(u64::MAX) || target_gas < cost.as_u64() {
-					return Some(Err(ExitError::OutOfGas))
-				}
+impl JsonPrecompile {
+	pub fn precompile(spec: &ForkSpec) -> Option<executor::Precompile> {
+		match spec {
+			ForkSpec::Istanbul => {
+				let mut map = BTreeMap::new();
+				precompile_entry!(map, ISTANBUL_BUILTINS, 1);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 2);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 3);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 4);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 5);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 6);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 7);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 8);
+				precompile_entry!(map, ISTANBUL_BUILTINS, 9);
+				Some(map)
 			}
-
-			let mut output = Vec::new();
-			match builtin.execute(input, &mut BytesRef::Flexible(&mut output)) {
-				Ok(()) => Some(Ok(PrecompileOutput {
-					exit_status: ExitSucceed::Stopped,
-					output,
-					cost: cost.as_u64(),
-					logs: Vec::new(),
-				})),
-				Err(e) => Some(Err(ExitError::Other(e.into()))),
+			ForkSpec::Berlin => {
+				let mut map = BTreeMap::new();
+				precompile_entry!(map, BERLIN_BUILTINS, 1);
+				precompile_entry!(map, BERLIN_BUILTINS, 2);
+				precompile_entry!(map, BERLIN_BUILTINS, 3);
+				precompile_entry!(map, BERLIN_BUILTINS, 4);
+				precompile_entry!(map, BERLIN_BUILTINS, 5);
+				precompile_entry!(map, BERLIN_BUILTINS, 6);
+				precompile_entry!(map, BERLIN_BUILTINS, 7);
+				precompile_entry!(map, BERLIN_BUILTINS, 8);
+				precompile_entry!(map, BERLIN_BUILTINS, 9);
+				Some(map)
 			}
-		} else {
-			None
+			_ => None,
 		}
 	}
 
-	fn addresses(&self) -> &[H160] {
-		&self.addresses
+	fn builtins(spec_path: &str) -> BTreeMap<H160, ethcore_builtin::Builtin> {
+		let reader = std::fs::File::open(spec_path).unwrap();
+		let builtins: BTreeMap<ethjson::hash::Address, ethjson::spec::builtin::BuiltinCompat> =
+			serde_json::from_reader(reader).unwrap();
+		builtins.into_iter().map(|(address, builtin)| {
+			(address.into(), ethjson::spec::Builtin::from(builtin).try_into().unwrap())
+		}).collect()
+	}
+
+	fn exec_as_precompile(builtin: &ethcore_builtin::Builtin, input: &[u8], gas_limit: Option<u64>) -> Result<PrecompileOutput, ExitError> {
+		let cost = builtin.cost(input, 0);
+
+		if let Some(target_gas) = gas_limit {
+			if cost > U256::from(u64::MAX) || target_gas < cost.as_u64() {
+				return Err(ExitError::OutOfGas);
+			}
+		}
+
+		let mut output = Vec::new();
+		match builtin.execute(input, &mut parity_bytes::BytesRef::Flexible(&mut output)) {
+			Ok(()) => Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Stopped,
+				output,
+				cost: cost.as_u64(),
+				logs: Vec::new(),
+			}),
+			Err(e) => Err(ExitError::Other(e.into())),
+		}
 	}
 }
 
@@ -104,9 +146,9 @@ pub fn test(name: &str, test: Test) {
 
 fn test_run(name: &str, test: Test) {
 	for (spec, states) in &test.0.post_states {
-		let (gasometer_config, delete_empty, precompile_path) = match spec {
-			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true, "./res/istanbul_builtins.json"),
-			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true, "./res/berlin_builtins.json"),
+		let (gasometer_config, delete_empty) = match spec {
+			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
+			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
 			spec => {
 				println!("Skip spec {:?}", spec);
 				continue
@@ -128,8 +170,7 @@ fn test_run(name: &str, test: Test) {
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
 			let metadata = StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 			let executor_state = MemoryStackState::new(metadata, &backend);
-            let precompile_addresses: Vec<_> = (1..=9).map(H160::from_low_u64_be).collect();
-			let precompile = JsonPrecompile { addresses: precompile_addresses, spec_path: precompile_path };
+			let precompile = JsonPrecompile::precompile(spec).unwrap();
 			let mut executor = StackExecutor::new_with_precompile(
 				executor_state,
 				&gasometer_config,
