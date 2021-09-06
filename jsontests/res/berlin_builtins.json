@@ -10,7 +10,7 @@
 	  "0": {
 		"price": { "alt_bn128_const_operations": { "price": 500 }}
 	  },
-	  "1": {
+	  "0": {
 		"info": "EIP 1108 transition",
 		"price": { "alt_bn128_const_operations": { "price": 150 }}
 	  }
@@ -22,7 +22,7 @@
 	  "0": {
 		"price": { "alt_bn128_const_operations": { "price": 40000 }}
 	  },
-	  "1": {
+	  "0": {
 		"info": "EIP 1108 transition",
 		"price": { "alt_bn128_const_operations": { "price": 6000 }}
 	  }
@@ -34,7 +34,7 @@
 	  "0": {
 		"price": { "alt_bn128_pairing": { "base": 100000, "pair": 80000 }}
 	  },
-	  "1": {
+	  "0": {
 		"info": "EIP 1108 transition",
 		"price": { "alt_bn128_pairing": { "base": 45000, "pair": 34000 }}
 	  }
