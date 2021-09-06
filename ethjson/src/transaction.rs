@@ -25,6 +25,9 @@ use serde::Deserialize;
 pub struct Transaction {
 	/// Transaction data.
 	pub data: Bytes,
+    /// Transaction access list (see EIP-2930).
+    #[serde(default)]
+    pub access_list: Vec<(Address, Vec<H256>)>,
 	/// Gas limit.
 	pub gas_limit: Uint,
 	/// Gas price.

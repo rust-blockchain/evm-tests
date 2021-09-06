@@ -37,6 +37,8 @@ pub struct Linear {
 pub struct Modexp {
 	/// Price divisor.
 	pub divisor: u64,
+	/// Use price scheme from EIP-2565
+	pub is_eip_2565: bool,
 }
 
 /// Pricing for constant alt_bn128 operations (ECADD and ECMUL)
@@ -273,7 +275,7 @@ mod tests {
 		let s = r#"{
 			"name": "late_start",
 			"activate_at": 100000,
-			"pricing": { "modexp": { "divisor": 5 } }
+			"pricing": { "modexp": { "divisor": 5, "is_eip_2565": false } }
 		}"#;
 
 		let builtin: Builtin = serde_json::from_str::<BuiltinCompat>(s).unwrap().into();
@@ -281,7 +283,7 @@ mod tests {
 		assert_eq!(builtin.pricing, btreemap![
 			100_000 => PricingAt {
 				info: None,
-				price: Pricing::Modexp(Modexp { divisor: 5 })
+				price: Pricing::Modexp(Modexp { divisor: 5, is_eip_2565: false })
 			}
 		]);
 	}

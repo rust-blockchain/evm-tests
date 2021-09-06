@@ -115,6 +115,7 @@ struct Linear {
 #[derive(Debug)]
 struct ModexpPricer {
 	divisor: u64,
+	is_eip_2565: bool,
 }
 
 impl Pricer for Linear {
@@ -157,47 +158,20 @@ impl Pricer for AltBn128PairingPricer {
 
 impl Pricer for ModexpPricer {
 	fn cost(&self, input: &[u8]) -> U256 {
-		let mut reader = input.chain(io::repeat(0));
-		let mut buf = [0; 32];
-
-		// read lengths as U256 here for accurate gas calculation.
-		let mut read_len = || {
-			reader.read_exact(&mut buf[..]).expect("reading from zero-extended memory cannot fail; qed");
-			U256::from_big_endian(&buf[..])
-		};
-		let base_len = read_len();
-		let exp_len = read_len();
-		let mod_len = read_len();
-
-		if mod_len.is_zero() && base_len.is_zero() {
-			return U256::zero()
-		}
-
-		let max_len = U256::from(u32::max_value() / 2);
-		if base_len > max_len || mod_len > max_len || exp_len > max_len {
-			return U256::max_value();
-		}
-		let (base_len, exp_len, mod_len) = (base_len.low_u64(), exp_len.low_u64(), mod_len.low_u64());
-
-		let m = max(mod_len, base_len);
-		// read fist 32-byte word of the exponent.
-		let exp_low = if base_len + 96 >= input.len() as u64 {
-			U256::zero()
+		if self.is_eip_2565 {
+			let mut buf = [0; 32];
+			let (base_len, exp_len, mod_len) = Self::read_lengths(input, &mut buf);
+			let exp = Self::read_exp(input, base_len, exp_len, &mut buf);
+			Self::eip_2565_cost(
+				self.divisor.into(),
+				base_len,
+				mod_len,
+				exp_len,
+				exp,
+			)
 		} else {
-			buf.iter_mut().for_each(|b| *b = 0);
-			let mut reader = input[(96 + base_len as usize)..].chain(io::repeat(0));
-			let len = min(exp_len, 32) as usize;
-			reader.read_exact(&mut buf[(32 - len)..]).expect("reading from zero-extended memory cannot fail; qed");
-			U256::from_big_endian(&buf[..])
-		};
-
-		let adjusted_exp_len = Self::adjusted_exp_len(exp_len, exp_low);
-
-		let (gas, overflow) = Self::mult_complexity(m).overflowing_mul(max(adjusted_exp_len, 1));
-		if overflow {
-			return U256::max_value();
+			Self::cost(self.divisor, input)
 		}
-		(gas / self.divisor as u64).into()
 	}
 }
 
@@ -217,6 +191,103 @@ impl ModexpPricer {
 			x if x <= 1024 => (x * x) / 4 + 96 * x - 3072,
 			x => (x * x) / 16 + 480 * x - 199_680,
 		}
+	}
+
+	fn read_lengths(input: &[u8], buf: &mut [u8; 32]) -> (U256, U256, U256) {
+		let mut reader = input.chain(io::repeat(0));
+		let mut read_len = || {
+			reader.read_exact(&mut buf[..]).expect("reading from zero-extended memory cannot fail; qed");
+			U256::from_big_endian(&buf[..])
+		};
+		let base_len = read_len();
+		let exp_len = read_len();
+		let mod_len = read_len();
+		(base_len, exp_len, mod_len)
+	}
+
+	fn read_exp(input: &[u8], base_len: U256, exp_len: U256, buf: &mut [u8; 32]) -> U256 {
+		let base_len = if base_len > U256::from(u32::MAX) {
+			return U256::zero();
+		} else {
+			base_len.low_u64()
+		};
+		if base_len + 96 >= input.len() as u64 {
+			U256::zero()
+		} else {
+			buf.iter_mut().for_each(|b| *b = 0);
+			let mut reader = input[(96 + base_len as usize)..].chain(io::repeat(0));
+			let len = if exp_len < U256::from(32) {
+				exp_len.low_u64() as usize
+			} else {
+				32
+			};
+			reader.read_exact(&mut buf[(32 - len)..]).expect("reading from zero-extended memory cannot fail; qed");
+			U256::from_big_endian(&buf[..])
+		}
+	}
+
+	fn cost(divisor: u64, input: &[u8]) -> U256 {
+		let mut buf = [0; 32];
+
+		// read lengths as U256 here for accurate gas calculation.
+		let (base_len, exp_len, mod_len) = Self::read_lengths(input, &mut buf);
+
+		if mod_len.is_zero() && base_len.is_zero() {
+			return U256::zero()
+		}
+
+		let max_len = U256::from(u32::max_value() / 2);
+		if base_len > max_len || mod_len > max_len || exp_len > max_len {
+			return U256::max_value();
+		}
+
+		// read fist 32-byte word of the exponent.
+		let exp_low = Self::read_exp(input, base_len, exp_len, &mut buf);
+
+		let (base_len, exp_len, mod_len) = (base_len.low_u64(), exp_len.low_u64(), mod_len.low_u64());
+
+		let m = max(mod_len, base_len);
+
+		let adjusted_exp_len = Self::adjusted_exp_len(exp_len, exp_low);
+
+		let (gas, overflow) = Self::mult_complexity(m).overflowing_mul(max(adjusted_exp_len, 1));
+		if overflow {
+			return U256::max_value();
+		}
+		(gas / divisor as u64).into()
+	}
+
+	fn eip_2565_mul_complexity(base_length: U256, modulus_length: U256) -> U256 {
+		let max_length = std::cmp::max(base_length, modulus_length);
+		let words = { // div_ceil(max_length, 8);
+			let tmp = max_length / 8;
+			if (max_length % 8).is_zero() {
+				tmp
+			} else {
+				tmp + 1
+			}
+		};
+		words.saturating_mul(words)
+	}
+
+	fn eip_2565_iter_count(exponent_length: U256, exponent: U256) -> U256 {
+		let thirty_two = U256::from(32);
+		let it = if exponent_length <= thirty_two && exponent.is_zero() {
+			U256::zero()
+		} else if exponent_length <= thirty_two {
+			U256::from(exponent.bits()) - U256::from(1)
+		} else {
+			// else > 32
+			U256::from(8).saturating_mul(exponent_length - thirty_two)
+				.saturating_add(U256::from(exponent.bits()).saturating_sub(U256::from(1)))
+		};
+		std::cmp::max(it, U256::one())
+	}
+
+	fn eip_2565_cost(divisor: U256, base_length: U256, modulus_length: U256, exponent_length: U256, exponent: U256) -> U256 {
+		let multiplication_complexity = Self::eip_2565_mul_complexity(base_length, modulus_length);
+		let iteration_count = Self::eip_2565_iter_count(exponent_length, exponent);
+		std::cmp::max(U256::from(200), multiplication_complexity.saturating_mul(iteration_count) / divisor)
 	}
 }
 
@@ -406,7 +477,8 @@ impl From<ethjson::spec::builtin::Pricing> for Pricing {
 						10
 					} else {
 						exp.divisor
-					}
+					},
+					is_eip_2565: exp.is_eip_2565,
 				})
 			}
 			ethjson::spec::builtin::Pricing::AltBn128Pairing(pricer) => {
@@ -1359,7 +1431,7 @@ mod tests {
 	#[test]
 	fn modexp() {
 		let f = Builtin {
-			pricer: btreemap![0 => Pricing::Modexp(ModexpPricer { divisor: 20 })],
+			pricer: btreemap![0 => Pricing::Modexp(ModexpPricer { divisor: 20, is_eip_2565: false })],
 			native: EthereumBuiltin::from_str("modexp").unwrap(),
 		};
 

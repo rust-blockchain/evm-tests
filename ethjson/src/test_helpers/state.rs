@@ -52,6 +52,9 @@ pub struct State {
 pub struct MultiTransaction {
 	/// Transaction data set.
 	pub data: Vec<Bytes>,
+    /// Access lists (see EIP-2930)
+    #[serde(default)]
+    pub access_lists: Vec<AccessList>,
 	/// Gas limit set.
 	pub gas_limit: Vec<Uint>,
 	/// Gas price.
@@ -70,8 +73,14 @@ pub struct MultiTransaction {
 impl MultiTransaction {
 	/// Build transaction with given indexes.
 	pub fn select(&self, indexes: &PostStateIndexes) -> Transaction {
+        let data_index = indexes.data as usize;
+        let access_list = if data_index < self.access_lists.len() {
+            self.access_lists[data_index].iter().map(|a| (a.address, a.storage_keys.clone())).collect()
+        } else {
+            Vec::new()
+        };
 		Transaction {
-			data: self.data[indexes.data as usize].clone(),
+			data: self.data[data_index].clone(),
 			gas_limit: self.gas_limit[indexes.gas as usize],
 			gas_price: self.gas_price,
 			nonce: self.nonce,
@@ -81,8 +90,23 @@ impl MultiTransaction {
 			s: Default::default(),
 			v: Default::default(),
 			secret: self.secret.clone(),
+            access_list,
 		}
 	}
+}
+
+/// Type alias for access lists (see EIP-2930)
+pub type AccessList = Vec<AccessListTuple>;
+
+/// Access list tuple (see https://eips.ethereum.org/EIPS/eip-2930).
+/// Example test spec: https://github.com/ethereum/tests/blob/5490db3ff58d371c0c74826280256ba016b0bd5c/GeneralStateTests/stExample/accessListExample.json
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AccessListTuple {
+    /// Address to access
+    pub address: Address,
+    /// Keys (slots) to access at that address
+    pub storage_keys: Vec<H256>,
 }
 
 /// State test indexes deserialization.
