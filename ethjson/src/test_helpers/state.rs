@@ -58,7 +58,14 @@ pub struct MultiTransaction {
 	/// Gas limit set.
 	pub gas_limit: Vec<Uint>,
 	/// Gas price.
+	#[serde(default)]
 	pub gas_price: Uint,
+	/// for details on `maxFeePerGas` see EIP-1559
+	#[serde(default)]
+	pub max_fee_per_gas: Uint,
+	/// for details on `maxPriorityFeePerGas` see EIP-1559
+	#[serde(default)]
+	pub max_priority_fee_per_gas: Uint,
 	/// Nonce.
 	pub nonce: Uint,
 	/// Secret key.

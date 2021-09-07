@@ -33,8 +33,13 @@ impl Test {
 	}
 
 	pub fn unwrap_to_vicinity(&self) -> MemoryVicinity {
+		let gas_price = if self.0.transaction.gas_price.0.is_zero() {
+			self.0.transaction.max_fee_per_gas.0 + self.0.transaction.max_priority_fee_per_gas.0
+		} else {
+			self.0.transaction.gas_price.0
+		};
 		MemoryVicinity {
-			gas_price: self.0.transaction.gas_price.clone().into(),
+			gas_price,
 			origin: self.unwrap_caller(),
 			block_hashes: Vec::new(),
 			block_number: self.0.env.number.clone().into(),
