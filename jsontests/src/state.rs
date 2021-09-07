@@ -38,12 +38,6 @@ impl Test {
 		} else {
 			self.0.transaction.gas_price.0
 		};
-		let block_base_fee_per_gas = if self.0.transaction.max_fee_per_gas.0.is_zero() {
-			// This seems to be the default value used when generated expected results for tests
-			U256::from(10)
-		} else {
-			self.0.transaction.max_fee_per_gas.0
-		};
 		MemoryVicinity {
 			gas_price,
 			origin: self.unwrap_caller(),
@@ -54,7 +48,7 @@ impl Test {
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
 			chain_id: U256::one(),
-			block_base_fee_per_gas,
+			block_base_fee_per_gas: self.0.env.block_base_fee_per_gas.clone().into(),
 		}
 	}
 }

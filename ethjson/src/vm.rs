@@ -117,6 +117,9 @@ pub struct Env {
 	/// Timestamp.
 	#[serde(rename = "currentTimestamp")]
 	pub timestamp: Uint,
+	/// Block base fee (see EIP-1559)
+	#[serde(rename = "currentBaseFee")]
+	pub block_base_fee_per_gas: Uint,
 }
 
 #[cfg(test)]
