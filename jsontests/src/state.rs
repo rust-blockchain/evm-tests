@@ -38,6 +38,11 @@ impl Test {
 		} else {
 			self.0.transaction.gas_price.0
 		};
+		let block_base_fee_per_gas = if self.0.transaction.max_fee_per_gas.0.is_zero() {
+			self.0.transaction.gas_price.0
+		} else {
+			self.0.transaction.max_fee_per_gas.0
+		};
 		MemoryVicinity {
 			gas_price,
 			origin: self.unwrap_caller(),
@@ -48,6 +53,7 @@ impl Test {
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
 			chain_id: U256::one(),
+			block_base_fee_per_gas,
 		}
 	}
 }
@@ -104,6 +110,8 @@ impl JsonPrecompile {
 				precompile_entry!(map, BERLIN_BUILTINS, 9);
 				Some(map)
 			}
+			// precompiles for London and Berlin are the same
+			ForkSpec::London => Self::precompile(&ForkSpec::Berlin),
 			_ => None,
 		}
 	}
@@ -170,6 +178,7 @@ fn test_run(name: &str, test: Test) {
 		let (gasometer_config, delete_empty) = match spec {
 			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
 			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
+			ethjson::spec::ForkSpec::London => (Config::london(), true),
 			spec => {
 				println!("Skip spec {:?}", spec);
 				continue;
