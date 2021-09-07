@@ -185,56 +185,60 @@ fn test_run(name: &str, test: Test) {
 			flush();
 
 			let transaction = test.0.transaction.select(&state.indexes);
-			let gas_limit: u64 = transaction.gas_limit.into();
-			let data: Vec<u8> = transaction.data.into();
-
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
-			let metadata =
-				StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
-			let executor_state = MemoryStackState::new(metadata, &backend);
-			let precompile = JsonPrecompile::precompile(spec).unwrap();
-			let mut executor =
-				StackExecutor::new_with_precompile(executor_state, &gasometer_config, precompile);
-			let total_fee = vicinity.gas_price * gas_limit;
 
-			executor.state_mut().withdraw(caller, total_fee).unwrap();
+			// Only execute valid transactions
+			if let Ok(transaction) = crate::utils::transaction::validate(transaction, &gasometer_config) {
+				let gas_limit: u64 = transaction.gas_limit.into();
+				let data: Vec<u8> = transaction.data.into();
+				let metadata =
+					StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
+				let executor_state = MemoryStackState::new(metadata, &backend);
+				let precompile = JsonPrecompile::precompile(spec).unwrap();
+				let mut executor =
+					StackExecutor::new_with_precompile(executor_state, &gasometer_config, precompile);
+				let total_fee = vicinity.gas_price * gas_limit;
 
-			let access_list = transaction
-				.access_list
-				.into_iter()
-				.map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
-				.collect();
+				executor.state_mut().withdraw(caller, total_fee).unwrap();
 
-			match transaction.to {
-				ethjson::maybe::MaybeEmpty::Some(to) => {
-					let data = data;
-					let value = transaction.value.into();
+				let access_list = transaction
+					.access_list
+					.into_iter()
+					.map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
+					.collect();
 
-					let _reason = executor.transact_call(
-						caller,
-						to.into(),
-						value,
-						data,
-						gas_limit,
-						access_list,
-					);
+				match transaction.to {
+					ethjson::maybe::MaybeEmpty::Some(to) => {
+						let data = data;
+						let value = transaction.value.into();
+
+						let _reason = executor.transact_call(
+							caller,
+							to.into(),
+							value,
+							data,
+							gas_limit,
+							access_list,
+						);
+					}
+					ethjson::maybe::MaybeEmpty::None => {
+						let code = data;
+						let value = transaction.value.into();
+
+						let _reason =
+							executor.transact_create(caller, value, code, gas_limit, access_list);
+					}
 				}
-				ethjson::maybe::MaybeEmpty::None => {
-					let code = data;
-					let value = transaction.value.into();
 
-					let _reason =
-						executor.transact_create(caller, value, code, gas_limit, access_list);
-				}
+				let actual_fee = executor.fee(vicinity.gas_price);
+				executor
+					.state_mut()
+					.deposit(vicinity.block_coinbase, actual_fee);
+				executor.state_mut().deposit(caller, total_fee - actual_fee);
+				let (values, logs) = executor.into_state().deconstruct();
+				backend.apply(values, logs, delete_empty);
 			}
 
-			let actual_fee = executor.fee(vicinity.gas_price);
-			executor
-				.state_mut()
-				.deposit(vicinity.block_coinbase, actual_fee);
-			executor.state_mut().deposit(caller, total_fee - actual_fee);
-			let (values, logs) = executor.into_state().deconstruct();
-			backend.apply(values, logs, delete_empty);
 			assert_valid_hash(&state.hash.0, backend.state());
 
 			println!("passed");

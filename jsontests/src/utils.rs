@@ -154,3 +154,52 @@ pub fn flush() {
 
 	io::stdout().flush().ok().expect("Could not flush stdout");
 }
+
+pub mod transaction {
+	use ethjson::uint::Uint;
+	use ethjson::transaction::Transaction;
+	use ethjson::maybe::MaybeEmpty;
+	use evm::gasometer::{self, Gasometer};
+	use primitive_types::{H160, H256, U256};
+
+	pub fn validate(tx: Transaction, config: &evm::Config) -> Result<Transaction, InvalidTxReason> {
+		match intrinsic_gas(&tx, config) {
+			None => return Err(InvalidTxReason::IntrinsicGas),
+			Some(required_gas) => if tx.gas_limit < Uint(U256::from(required_gas)) {
+				return Err(InvalidTxReason::IntrinsicGas);
+			}
+		}
+
+		Ok(tx)
+	}
+
+	fn intrinsic_gas(tx: &Transaction, config: &evm::Config) -> Option<u64> {
+		let is_contract_creation = match tx.to {
+			MaybeEmpty::None => true,
+			MaybeEmpty::Some(_) => false,
+		};
+		let data = &tx.data;
+		let access_list: Vec<(H160, Vec<H256>)> = tx
+			.access_list
+			.iter()
+			.map(|(a, s)| {
+				(a.0, s.into_iter().map(|h| h.0).collect())
+			})
+			.collect();
+
+		let cost = if is_contract_creation {
+			gasometer::create_transaction_cost(data, &access_list)
+		} else {
+			gasometer::call_transaction_cost(data, &access_list)
+		};
+
+		let mut g = Gasometer::new(u64::MAX, config);
+		g.record_transaction(cost).ok()?;
+
+		Some(g.total_used_gas())
+	}
+
+	pub enum InvalidTxReason {
+		IntrinsicGas,
+	}
+}
