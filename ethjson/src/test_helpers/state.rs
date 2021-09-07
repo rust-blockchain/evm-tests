@@ -28,6 +28,7 @@ use crate::{
 	uint::Uint,
 	vm::Env,
 };
+use ethereum_types::U256;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -78,6 +79,24 @@ pub struct MultiTransaction {
 }
 
 impl MultiTransaction {
+	/// max_priority_fee_per_gas (see EIP-1559)
+	pub fn max_priority_fee_per_gas(&self) -> U256 {
+		if self.max_priority_fee_per_gas.0.is_zero() {
+			self.gas_price.0
+		} else {
+			self.max_priority_fee_per_gas.0
+		}
+	}
+
+	/// max_fee_per_gas (see EIP-1559)
+	pub fn max_fee_per_gas(&self) -> U256 {
+		if self.max_fee_per_gas.0.is_zero() {
+			self.gas_price.0
+		} else {
+			self.max_fee_per_gas.0
+		}
+	}
+
 	/// Build transaction with given indexes.
 	pub fn select(&self, indexes: &PostStateIndexes) -> Transaction {
 		let data_index = indexes.data as usize;

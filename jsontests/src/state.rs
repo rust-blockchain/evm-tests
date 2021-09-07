@@ -39,7 +39,8 @@ impl Test {
 			self.0.transaction.gas_price.0
 		};
 		let block_base_fee_per_gas = if self.0.transaction.max_fee_per_gas.0.is_zero() {
-			self.0.transaction.gas_price.0
+			// This seems to be the default value used when generated expected results for tests
+			U256::from(10)
 		} else {
 			self.0.transaction.max_fee_per_gas.0
 		};
@@ -240,9 +241,19 @@ fn test_run(name: &str, test: Test) {
 				}
 
 				let actual_fee = executor.fee(vicinity.gas_price);
+				let mniner_reward = if let ForkSpec::London = spec {
+					// see EIP-1559
+					let max_priority_fee_per_gas = test.0.transaction.max_priority_fee_per_gas();
+					let max_fee_per_gas = test.0.transaction.max_fee_per_gas();
+					let base_fee_per_gas = vicinity.block_base_fee_per_gas;
+					let priority_fee_per_gas = std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
+					executor.fee(priority_fee_per_gas)
+				} else {
+					actual_fee
+				};
 				executor
 					.state_mut()
-					.deposit(vicinity.block_coinbase, actual_fee);
+					.deposit(vicinity.block_coinbase, mniner_reward);
 				executor.state_mut().deposit(caller, total_fee - actual_fee);
 				let (values, logs) = executor.into_state().deconstruct();
 				backend.apply(values, logs, delete_empty);
