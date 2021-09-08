@@ -190,7 +190,8 @@ mod tests {
 				difficulty: Uint(0x0100.into()),
 				gas_limit: Uint(0x0f4240.into()),
 				number: Uint(0.into()),
-				timestamp: Uint(1.into())
+				timestamp: Uint(1.into()),
+				block_base_fee_per_gas: Uint(0.into())
 			}
 		);
 		assert_eq!(
