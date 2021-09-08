@@ -33,8 +33,12 @@ impl Test {
 	}
 
 	pub fn unwrap_to_vicinity(&self) -> MemoryVicinity {
-		let gas_price = if self.0.transaction.gas_price.0.is_zero() {
-			self.0.transaction.max_fee_per_gas.0 + self.0.transaction.max_priority_fee_per_gas.0
+        let block_base_fee_per_gas = self.0.env.block_base_fee_per_gas.0;
+        let gas_price = if self.0.transaction.gas_price.0.is_zero() {
+            let max_fee_per_gas = self.0.transaction.max_fee_per_gas.0;
+            let max_priority_fee_per_gas = self.0.transaction.max_priority_fee_per_gas.0;
+            let priority_fee_per_gas = std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - block_base_fee_per_gas);
+            priority_fee_per_gas + block_base_fee_per_gas
 		} else {
 			self.0.transaction.gas_price.0
 		};
@@ -48,7 +52,7 @@ impl Test {
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
 			chain_id: U256::one(),
-			block_base_fee_per_gas: self.0.env.block_base_fee_per_gas.clone().into(),
+			block_base_fee_per_gas,
 		}
 	}
 }
