@@ -32,17 +32,40 @@ impl Test {
 		sender
 	}
 
-	pub fn unwrap_to_vicinity(&self) -> MemoryVicinity {
+	pub fn unwrap_to_vicinity(&self, spec: &ForkSpec) -> Option<MemoryVicinity> {
         let block_base_fee_per_gas = self.0.env.block_base_fee_per_gas.0;
         let gas_price = if self.0.transaction.gas_price.0.is_zero() {
             let max_fee_per_gas = self.0.transaction.max_fee_per_gas.0;
+
+			// max_fee_per_gas is only defined for London and later
+			if !max_fee_per_gas.is_zero() && spec < &ForkSpec::London {
+				return None;
+			}
+
+			// Cannot specify a lower fee than the base fee
+			if max_fee_per_gas < block_base_fee_per_gas {
+				return None;
+			}
+
             let max_priority_fee_per_gas = self.0.transaction.max_priority_fee_per_gas.0;
+
+			// priority fee must be lower than regaular fee
+			if max_fee_per_gas < max_priority_fee_per_gas {
+				return None;
+			}
+
             let priority_fee_per_gas = std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - block_base_fee_per_gas);
             priority_fee_per_gas + block_base_fee_per_gas
 		} else {
 			self.0.transaction.gas_price.0
 		};
-		MemoryVicinity {
+
+		// gas price cannot be lower than base fee
+		if gas_price < block_base_fee_per_gas {
+			return None;
+		}
+
+		Some(MemoryVicinity {
 			gas_price,
 			origin: self.unwrap_caller(),
 			block_hashes: Vec::new(),
@@ -53,7 +76,7 @@ impl Test {
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
 			chain_id: U256::one(),
 			block_base_fee_per_gas,
-		}
+		})
 	}
 }
 
@@ -185,7 +208,14 @@ fn test_run(name: &str, test: Test) {
 		};
 
 		let original_state = test.unwrap_to_pre_state();
-		let vicinity = test.unwrap_to_vicinity();
+		let vicinity = test.unwrap_to_vicinity(spec);
+		if vicinity.is_none() {
+			// if vicinity could not be computed then the transaction was invalid so we simply
+			// check the original state and move on
+			assert_valid_hash(&states.first().unwrap().hash.0, &original_state);
+			continue;
+		}
+		let vicinity = vicinity.unwrap();
 		let caller = test.unwrap_caller();
 		let caller_balance = original_state.get(&caller).unwrap().balance;
 
@@ -197,7 +227,12 @@ fn test_run(name: &str, test: Test) {
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
 
 			// Only execute valid transactions
-			if let Ok(transaction) = crate::utils::transaction::validate(transaction, caller_balance, &gasometer_config) {
+			if let Ok(transaction) = crate::utils::transaction::validate(
+				transaction,
+				test.0.env.gas_limit.0,
+				caller_balance,
+				&gasometer_config,
+			) {
 				let gas_limit: u64 = transaction.gas_limit.into();
 				let data: Vec<u8> = transaction.data.into();
 				let metadata =
