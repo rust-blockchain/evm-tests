@@ -55,7 +55,7 @@ pub struct MultiTransaction {
 	pub data: Vec<Bytes>,
 	/// Access lists (see EIP-2930)
 	#[serde(default)]
-	pub access_lists: Vec<AccessList>,
+	pub access_lists: Vec<Option<AccessList>>,
 	/// Gas limit set.
 	pub gas_limit: Vec<Uint>,
 	/// Gas price.
@@ -101,9 +101,13 @@ impl MultiTransaction {
 	pub fn select(&self, indexes: &PostStateIndexes) -> Transaction {
 		let data_index = indexes.data as usize;
 		let access_list = if data_index < self.access_lists.len() {
-			self.access_lists[data_index]
-				.iter()
-				.map(|a| (a.address, a.storage_keys.clone()))
+			self.access_lists.get(data_index)
+				.unwrap()
+				.as_ref()
+				.cloned()
+				.unwrap_or_default()
+				.into_iter()
+				.map(|a| (a.address, a.storage_keys))
 				.collect()
 		} else {
 			Vec::new()
@@ -136,7 +140,7 @@ pub type AccessList = Vec<AccessListTuple>;
 
 /// Access list tuple (see https://eips.ethereum.org/EIPS/eip-2930).
 /// Example test spec: https://github.com/ethereum/tests/blob/5490db3ff58d371c0c74826280256ba016b0bd5c/GeneralStateTests/stExample/accessListExample.json
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessListTuple {
 	/// Address to access
