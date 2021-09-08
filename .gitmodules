@@ -1,6 +1,6 @@
 [submodule "evm"]
 	path = evm
-	url = https://github.com/rust-blockchain/evm
+	url = https://github.com/aurora-engine/sputnikvm
 [submodule "jsontests/res/ethtests"]
 	path = jsontests/res/ethtests
 	url = https://github.com/ethereum/tests
