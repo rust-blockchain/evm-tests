@@ -1,6 +1,7 @@
 [submodule "evm"]
 	path = evm
 	url = https://github.com/aurora-engine/sputnikvm
+	branch = feat/london-support
 [submodule "jsontests/res/ethtests"]
 	path = jsontests/res/ethtests
 	url = https://github.com/ethereum/tests
