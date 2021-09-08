@@ -108,10 +108,17 @@ impl MultiTransaction {
 		} else {
 			Vec::new()
 		};
+
+		let gas_price = if self.gas_price.0.is_zero() {
+			self.max_fee_per_gas.0 + self.max_priority_fee_per_gas.0
+		} else {
+			self.gas_price.0
+		};
+
 		Transaction {
 			data: self.data[data_index].clone(),
 			gas_limit: self.gas_limit[indexes.gas as usize],
-			gas_price: self.gas_price,
+			gas_price: Uint(gas_price),
 			nonce: self.nonce,
 			to: self.to.clone(),
 			value: self.value[indexes.value as usize],

@@ -162,12 +162,17 @@ pub mod transaction {
 	use evm::gasometer::{self, Gasometer};
 	use primitive_types::{H160, H256, U256};
 
-	pub fn validate(tx: Transaction, config: &evm::Config) -> Result<Transaction, InvalidTxReason> {
+	pub fn validate(tx: Transaction, caller_balance: U256, config: &evm::Config) -> Result<Transaction, InvalidTxReason> {
 		match intrinsic_gas(&tx, config) {
 			None => return Err(InvalidTxReason::IntrinsicGas),
 			Some(required_gas) => if tx.gas_limit < Uint(U256::from(required_gas)) {
 				return Err(InvalidTxReason::IntrinsicGas);
 			}
+		}
+
+		let required_funds = tx.gas_limit.0 * tx.gas_price.0 + tx.value.0;
+		if caller_balance < required_funds {
+			return Err(InvalidTxReason::OutOfFund);
 		}
 
 		Ok(tx)
@@ -201,5 +206,6 @@ pub mod transaction {
 
 	pub enum InvalidTxReason {
 		IntrinsicGas,
+		OutOfFund,
 	}
 }

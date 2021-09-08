@@ -187,6 +187,7 @@ fn test_run(name: &str, test: Test) {
 		let original_state = test.unwrap_to_pre_state();
 		let vicinity = test.unwrap_to_vicinity();
 		let caller = test.unwrap_caller();
+		let caller_balance = original_state.get(&caller).unwrap().balance;
 
 		for (i, state) in states.iter().enumerate() {
 			print!("Running {}:{:?}:{} ... ", name, spec, i);
@@ -196,7 +197,7 @@ fn test_run(name: &str, test: Test) {
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
 
 			// Only execute valid transactions
-			if let Ok(transaction) = crate::utils::transaction::validate(transaction, &gasometer_config) {
+			if let Ok(transaction) = crate::utils::transaction::validate(transaction, caller_balance, &gasometer_config) {
 				let gas_limit: u64 = transaction.gas_limit.into();
 				let data: Vec<u8> = transaction.data.into();
 				let metadata =
