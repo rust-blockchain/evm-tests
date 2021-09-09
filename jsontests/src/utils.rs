@@ -19,11 +19,16 @@ pub fn unwrap_to_account(s: &ethjson::spec::Account) -> MemoryAccount {
 			.as_ref()
 			.unwrap()
 			.iter()
-			.map(|(k, v)| {
-				(
-					u256_to_h256(k.clone().into()),
-					u256_to_h256(v.clone().into()),
-				)
+			.filter_map(|(k, v)| {
+				if v.0.is_zero() {
+					// If value is zero then the key is not really there
+					None
+				} else {
+					Some((
+						u256_to_h256(k.clone().into()),
+						u256_to_h256(v.clone().into()),
+					))
+				}
 			})
 			.collect(),
 	}
