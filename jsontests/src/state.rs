@@ -189,7 +189,7 @@ fn test_run(name: &str, test: Test) {
 			let executor_state = MemoryStackState::new(metadata, &backend);
 			let precompile = JsonPrecompile::precompile(spec).unwrap();
 			let mut executor =
-				StackExecutor::new_with_precompile(executor_state, &gasometer_config, precompile);
+				StackExecutor::new_with_precompile(executor_state, &gasometer_config, &precompile);
 			let total_fee = vicinity.gas_price * gas_limit;
 
 			executor.state_mut().withdraw(caller, total_fee).unwrap();
