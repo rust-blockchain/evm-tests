@@ -2,7 +2,8 @@ use crate::utils::*;
 use ethjson::spec::ForkSpec;
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::executor::{
-	self, MemoryStackState, PrecompileOutput, StackExecutor, StackSubstateMetadata,
+	self, MemoryStackState, PrecompileError, PrecompileErrorExt, PrecompileOutput, StackExecutor,
+	StackSubstateMetadata,
 };
 use evm::{Config, Context, ExitError, ExitSucceed};
 use lazy_static::lazy_static;
@@ -59,7 +60,7 @@ lazy_static! {
 
 macro_rules! precompile_entry {
 	($map:expr, $builtins:expr, $index:expr) => {
-		let x: fn(&[u8], Option<u64>, &Context, bool) -> Result<PrecompileOutput, ExitError> =
+		let x: fn(&[u8], Option<u64>, &Context, bool) -> Result<PrecompileOutput, PrecompileError> =
 			|input: &[u8], gas_limit: Option<u64>, _context: &Context, _is_static: bool| {
 				let builtin = $builtins.get(&H160::from_low_u64_be($index)).unwrap();
 				Self::exec_as_precompile(builtin, input, gas_limit)
@@ -122,12 +123,12 @@ impl JsonPrecompile {
 		builtin: &ethcore_builtin::Builtin,
 		input: &[u8],
 		gas_limit: Option<u64>,
-	) -> Result<PrecompileOutput, ExitError> {
+	) -> Result<PrecompileOutput, PrecompileError> {
 		let cost = builtin.cost(input, 0);
 
 		if let Some(target_gas) = gas_limit {
 			if cost > U256::from(u64::MAX) || target_gas < cost.as_u64() {
-				return Err(ExitError::OutOfGas);
+				return Err(ExitError::OutOfGas.with_cost(0));
 			}
 		}
 
@@ -139,7 +140,7 @@ impl JsonPrecompile {
 				cost: cost.as_u64(),
 				logs: Vec::new(),
 			}),
-			Err(e) => Err(ExitError::Other(e.into())),
+			Err(e) => Err(ExitError::Other(e.into()).with_cost(cost.as_u64())),
 		}
 	}
 }
