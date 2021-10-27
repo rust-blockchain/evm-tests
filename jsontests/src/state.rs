@@ -77,7 +77,7 @@ macro_rules! precompile_entry {
 pub struct JsonPrecompile;
 
 impl JsonPrecompile {
-	pub fn precompile(spec: &ForkSpec) -> Option<executor::Precompile> {
+	pub fn precompile(spec: &ForkSpec) -> Option<BTreeMap<H160, executor::PrecompileFn>> {
 		match spec {
 			ForkSpec::Istanbul => {
 				let mut map = BTreeMap::new();
@@ -199,7 +199,7 @@ fn test_run(name: &str, test: Test) {
 			let executor_state = MemoryStackState::new(metadata, &backend);
 			let precompile = JsonPrecompile::precompile(spec).unwrap();
 			let mut executor =
-				StackExecutor::new_with_precompile(executor_state, &gasometer_config, &precompile);
+				StackExecutor::new_with_precompiles(executor_state, &gasometer_config, &precompile);
 			let total_fee = vicinity.gas_price * gas_limit;
 
 			executor.state_mut().withdraw(caller, total_fee).unwrap();
