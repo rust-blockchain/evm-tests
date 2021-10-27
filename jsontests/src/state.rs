@@ -34,9 +34,9 @@ impl Test {
 	}
 
 	pub fn unwrap_to_vicinity(&self, spec: &ForkSpec) -> Option<MemoryVicinity> {
-        let block_base_fee_per_gas = self.0.env.block_base_fee_per_gas.0;
-        let gas_price = if self.0.transaction.gas_price.0.is_zero() {
-            let max_fee_per_gas = self.0.transaction.max_fee_per_gas.0;
+		let block_base_fee_per_gas = self.0.env.block_base_fee_per_gas.0;
+		let gas_price = if self.0.transaction.gas_price.0.is_zero() {
+			let max_fee_per_gas = self.0.transaction.max_fee_per_gas.0;
 
 			// max_fee_per_gas is only defined for London and later
 			if !max_fee_per_gas.is_zero() && spec < &ForkSpec::London {
@@ -48,15 +48,18 @@ impl Test {
 				return None;
 			}
 
-            let max_priority_fee_per_gas = self.0.transaction.max_priority_fee_per_gas.0;
+			let max_priority_fee_per_gas = self.0.transaction.max_priority_fee_per_gas.0;
 
 			// priority fee must be lower than regaular fee
 			if max_fee_per_gas < max_priority_fee_per_gas {
 				return None;
 			}
 
-            let priority_fee_per_gas = std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - block_base_fee_per_gas);
-            priority_fee_per_gas + block_base_fee_per_gas
+			let priority_fee_per_gas = std::cmp::min(
+				max_priority_fee_per_gas,
+				max_fee_per_gas - block_base_fee_per_gas,
+			);
+			priority_fee_per_gas + block_base_fee_per_gas
 		} else {
 			self.0.transaction.gas_price.0
 		};
@@ -249,8 +252,11 @@ fn test_run(name: &str, test: Test) {
 					StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
 				let executor_state = MemoryStackState::new(metadata, &backend);
 				let precompile = JsonPrecompile::precompile(spec).unwrap();
-				let mut executor =
-					StackExecutor::new_with_precompiles(executor_state, &gasometer_config, &precompile);
+				let mut executor = StackExecutor::new_with_precompiles(
+					executor_state,
+					&gasometer_config,
+					&precompile,
+				);
 				let total_fee = vicinity.gas_price * gas_limit;
 
 				executor.state_mut().withdraw(caller, total_fee).unwrap();
@@ -290,7 +296,8 @@ fn test_run(name: &str, test: Test) {
 					let max_priority_fee_per_gas = test.0.transaction.max_priority_fee_per_gas();
 					let max_fee_per_gas = test.0.transaction.max_fee_per_gas();
 					let base_fee_per_gas = vicinity.block_base_fee_per_gas;
-					let priority_fee_per_gas = std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
+					let priority_fee_per_gas =
+						std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
 					executor.fee(priority_fee_per_gas)
 				} else {
 					actual_fee

@@ -101,7 +101,8 @@ impl MultiTransaction {
 	pub fn select(&self, indexes: &PostStateIndexes) -> Transaction {
 		let data_index = indexes.data as usize;
 		let access_list = if data_index < self.access_lists.len() {
-			self.access_lists.get(data_index)
+			self.access_lists
+				.get(data_index)
 				.unwrap()
 				.as_ref()
 				.cloned()

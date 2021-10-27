@@ -161,17 +161,24 @@ pub fn flush() {
 }
 
 pub mod transaction {
-	use ethjson::uint::Uint;
-	use ethjson::transaction::Transaction;
 	use ethjson::maybe::MaybeEmpty;
+	use ethjson::transaction::Transaction;
+	use ethjson::uint::Uint;
 	use evm::gasometer::{self, Gasometer};
 	use primitive_types::{H160, H256, U256};
 
-	pub fn validate(tx: Transaction, block_gas_limit: U256, caller_balance: U256, config: &evm::Config) -> Result<Transaction, InvalidTxReason> {
+	pub fn validate(
+		tx: Transaction,
+		block_gas_limit: U256,
+		caller_balance: U256,
+		config: &evm::Config,
+	) -> Result<Transaction, InvalidTxReason> {
 		match intrinsic_gas(&tx, config) {
 			None => return Err(InvalidTxReason::IntrinsicGas),
-			Some(required_gas) => if tx.gas_limit < Uint(U256::from(required_gas)) {
-				return Err(InvalidTxReason::IntrinsicGas);
+			Some(required_gas) => {
+				if tx.gas_limit < Uint(U256::from(required_gas)) {
+					return Err(InvalidTxReason::IntrinsicGas);
+				}
 			}
 		}
 
@@ -196,9 +203,7 @@ pub mod transaction {
 		let access_list: Vec<(H160, Vec<H256>)> = tx
 			.access_list
 			.iter()
-			.map(|(a, s)| {
-				(a.0, s.into_iter().map(|h| h.0).collect())
-			})
+			.map(|(a, s)| (a.0, s.into_iter().map(|h| h.0).collect()))
 			.collect();
 
 		let cost = if is_contract_creation {
