@@ -26,6 +26,7 @@ impl Test {
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
 			chain_id: U256::zero(),
+			block_base_fee_per_gas: self.0.transaction.gas_price.clone().into(),
 		}
 	}
 

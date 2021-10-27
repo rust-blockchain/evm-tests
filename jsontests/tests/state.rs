@@ -98,8 +98,16 @@ fn st_eip150_specific() {
 	run("res/ethtests/GeneralStateTests/stEIP150Specific")
 }
 #[test]
+fn st_eip1559() {
+	run("res/ethtests/GeneralStateTests/stEIP1559")
+}
+#[test]
 fn st_eip158_specific() {
 	run("res/ethtests/GeneralStateTests/stEIP158Specific")
+}
+#[test]
+fn st_eip2930() {
+	run("res/ethtests/GeneralStateTests/stEIP2930")
 }
 #[test]
 fn st_example() {

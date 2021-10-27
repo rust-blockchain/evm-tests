@@ -33,9 +33,44 @@ impl Test {
 		sender
 	}
 
-	pub fn unwrap_to_vicinity(&self) -> MemoryVicinity {
-		MemoryVicinity {
-			gas_price: self.0.transaction.gas_price.clone().into(),
+	pub fn unwrap_to_vicinity(&self, spec: &ForkSpec) -> Option<MemoryVicinity> {
+		let block_base_fee_per_gas = self.0.env.block_base_fee_per_gas.0;
+		let gas_price = if self.0.transaction.gas_price.0.is_zero() {
+			let max_fee_per_gas = self.0.transaction.max_fee_per_gas.0;
+
+			// max_fee_per_gas is only defined for London and later
+			if !max_fee_per_gas.is_zero() && spec < &ForkSpec::London {
+				return None;
+			}
+
+			// Cannot specify a lower fee than the base fee
+			if max_fee_per_gas < block_base_fee_per_gas {
+				return None;
+			}
+
+			let max_priority_fee_per_gas = self.0.transaction.max_priority_fee_per_gas.0;
+
+			// priority fee must be lower than regaular fee
+			if max_fee_per_gas < max_priority_fee_per_gas {
+				return None;
+			}
+
+			let priority_fee_per_gas = std::cmp::min(
+				max_priority_fee_per_gas,
+				max_fee_per_gas - block_base_fee_per_gas,
+			);
+			priority_fee_per_gas + block_base_fee_per_gas
+		} else {
+			self.0.transaction.gas_price.0
+		};
+
+		// gas price cannot be lower than base fee
+		if gas_price < block_base_fee_per_gas {
+			return None;
+		}
+
+		Some(MemoryVicinity {
+			gas_price,
 			origin: self.unwrap_caller(),
 			block_hashes: Vec::new(),
 			block_number: self.0.env.number.clone().into(),
@@ -44,7 +79,8 @@ impl Test {
 			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
 			chain_id: U256::one(),
-		}
+			block_base_fee_per_gas,
+		})
 	}
 }
 
@@ -105,6 +141,8 @@ impl JsonPrecompile {
 				precompile_entry!(map, BERLIN_BUILTINS, 9);
 				Some(map)
 			}
+			// precompiles for London and Berlin are the same
+			ForkSpec::London => Self::precompile(&ForkSpec::Berlin),
 			_ => None,
 		}
 	}
@@ -175,6 +213,7 @@ fn test_run(name: &str, test: Test) {
 		let (gasometer_config, delete_empty) = match spec {
 			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
 			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
+			ethjson::spec::ForkSpec::London => (Config::london(), true),
 			spec => {
 				println!("Skip spec {:?}", spec);
 				continue;
@@ -182,64 +221,95 @@ fn test_run(name: &str, test: Test) {
 		};
 
 		let original_state = test.unwrap_to_pre_state();
-		let vicinity = test.unwrap_to_vicinity();
+		let vicinity = test.unwrap_to_vicinity(spec);
+		if vicinity.is_none() {
+			// if vicinity could not be computed then the transaction was invalid so we simply
+			// check the original state and move on
+			assert_valid_hash(&states.first().unwrap().hash.0, &original_state);
+			continue;
+		}
+		let vicinity = vicinity.unwrap();
 		let caller = test.unwrap_caller();
+		let caller_balance = original_state.get(&caller).unwrap().balance;
 
 		for (i, state) in states.iter().enumerate() {
 			print!("Running {}:{:?}:{} ... ", name, spec, i);
 			flush();
 
 			let transaction = test.0.transaction.select(&state.indexes);
-			let gas_limit: u64 = transaction.gas_limit.into();
-			let data: Vec<u8> = transaction.data.into();
-
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
-			let metadata =
-				StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
-			let executor_state = MemoryStackState::new(metadata, &backend);
-			let precompile = JsonPrecompile::precompile(spec).unwrap();
-			let mut executor =
-				StackExecutor::new_with_precompiles(executor_state, &gasometer_config, &precompile);
-			let total_fee = vicinity.gas_price * gas_limit;
 
-			executor.state_mut().withdraw(caller, total_fee).unwrap();
+			// Only execute valid transactions
+			if let Ok(transaction) = crate::utils::transaction::validate(
+				transaction,
+				test.0.env.gas_limit.0,
+				caller_balance,
+				&gasometer_config,
+			) {
+				let gas_limit: u64 = transaction.gas_limit.into();
+				let data: Vec<u8> = transaction.data.into();
+				let metadata =
+					StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
+				let executor_state = MemoryStackState::new(metadata, &backend);
+				let precompile = JsonPrecompile::precompile(spec).unwrap();
+				let mut executor = StackExecutor::new_with_precompiles(
+					executor_state,
+					&gasometer_config,
+					&precompile,
+				);
+				let total_fee = vicinity.gas_price * gas_limit;
 
-			let access_list = transaction
-				.access_list
-				.into_iter()
-				.map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
-				.collect();
+				executor.state_mut().withdraw(caller, total_fee).unwrap();
 
-			match transaction.to {
-				ethjson::maybe::MaybeEmpty::Some(to) => {
-					let data = data;
-					let value = transaction.value.into();
+				let access_list = transaction
+					.access_list
+					.into_iter()
+					.map(|(address, keys)| (address.0, keys.into_iter().map(|k| k.0).collect()))
+					.collect();
 
-					let _reason = executor.transact_call(
-						caller,
-						to.into(),
-						value,
-						data,
-						gas_limit,
-						access_list,
-					);
+				match transaction.to {
+					ethjson::maybe::MaybeEmpty::Some(to) => {
+						let data = data;
+						let value = transaction.value.into();
+
+						let _reason = executor.transact_call(
+							caller,
+							to.into(),
+							value,
+							data,
+							gas_limit,
+							access_list,
+						);
+					}
+					ethjson::maybe::MaybeEmpty::None => {
+						let code = data;
+						let value = transaction.value.into();
+
+						let _reason =
+							executor.transact_create(caller, value, code, gas_limit, access_list);
+					}
 				}
-				ethjson::maybe::MaybeEmpty::None => {
-					let code = data;
-					let value = transaction.value.into();
 
-					let _reason =
-						executor.transact_create(caller, value, code, gas_limit, access_list);
-				}
+				let actual_fee = executor.fee(vicinity.gas_price);
+				let mniner_reward = if let ForkSpec::London = spec {
+					// see EIP-1559
+					let max_priority_fee_per_gas = test.0.transaction.max_priority_fee_per_gas();
+					let max_fee_per_gas = test.0.transaction.max_fee_per_gas();
+					let base_fee_per_gas = vicinity.block_base_fee_per_gas;
+					let priority_fee_per_gas =
+						std::cmp::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
+					executor.fee(priority_fee_per_gas)
+				} else {
+					actual_fee
+				};
+				executor
+					.state_mut()
+					.deposit(vicinity.block_coinbase, mniner_reward);
+				executor.state_mut().deposit(caller, total_fee - actual_fee);
+				let (values, logs) = executor.into_state().deconstruct();
+				backend.apply(values, logs, delete_empty);
 			}
 
-			let actual_fee = executor.fee(vicinity.gas_price);
-			executor
-				.state_mut()
-				.deposit(vicinity.block_coinbase, actual_fee);
-			executor.state_mut().deposit(caller, total_fee - actual_fee);
-			let (values, logs) = executor.into_state().deconstruct();
-			backend.apply(values, logs, delete_empty);
 			assert_valid_hash(&state.hash.0, backend.state());
 
 			println!("passed");

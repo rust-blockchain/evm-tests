@@ -28,6 +28,7 @@ use crate::{
 	uint::Uint,
 	vm::Env,
 };
+use ethereum_types::U256;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -54,11 +55,18 @@ pub struct MultiTransaction {
 	pub data: Vec<Bytes>,
 	/// Access lists (see EIP-2930)
 	#[serde(default)]
-	pub access_lists: Vec<AccessList>,
+	pub access_lists: Vec<Option<AccessList>>,
 	/// Gas limit set.
 	pub gas_limit: Vec<Uint>,
 	/// Gas price.
+	#[serde(default)]
 	pub gas_price: Uint,
+	/// for details on `maxFeePerGas` see EIP-1559
+	#[serde(default)]
+	pub max_fee_per_gas: Uint,
+	/// for details on `maxPriorityFeePerGas` see EIP-1559
+	#[serde(default)]
+	pub max_priority_fee_per_gas: Uint,
 	/// Nonce.
 	pub nonce: Uint,
 	/// Secret key.
@@ -71,21 +79,51 @@ pub struct MultiTransaction {
 }
 
 impl MultiTransaction {
+	/// max_priority_fee_per_gas (see EIP-1559)
+	pub fn max_priority_fee_per_gas(&self) -> U256 {
+		if self.max_priority_fee_per_gas.0.is_zero() {
+			self.gas_price.0
+		} else {
+			self.max_priority_fee_per_gas.0
+		}
+	}
+
+	/// max_fee_per_gas (see EIP-1559)
+	pub fn max_fee_per_gas(&self) -> U256 {
+		if self.max_fee_per_gas.0.is_zero() {
+			self.gas_price.0
+		} else {
+			self.max_fee_per_gas.0
+		}
+	}
+
 	/// Build transaction with given indexes.
 	pub fn select(&self, indexes: &PostStateIndexes) -> Transaction {
 		let data_index = indexes.data as usize;
 		let access_list = if data_index < self.access_lists.len() {
-			self.access_lists[data_index]
-				.iter()
-				.map(|a| (a.address, a.storage_keys.clone()))
+			self.access_lists
+				.get(data_index)
+				.unwrap()
+				.as_ref()
+				.cloned()
+				.unwrap_or_default()
+				.into_iter()
+				.map(|a| (a.address, a.storage_keys))
 				.collect()
 		} else {
 			Vec::new()
 		};
+
+		let gas_price = if self.gas_price.0.is_zero() {
+			self.max_fee_per_gas.0 + self.max_priority_fee_per_gas.0
+		} else {
+			self.gas_price.0
+		};
+
 		Transaction {
 			data: self.data[data_index].clone(),
 			gas_limit: self.gas_limit[indexes.gas as usize],
-			gas_price: self.gas_price,
+			gas_price: Uint(gas_price),
 			nonce: self.nonce,
 			to: self.to.clone(),
 			value: self.value[indexes.value as usize],
@@ -103,7 +141,7 @@ pub type AccessList = Vec<AccessListTuple>;
 
 /// Access list tuple (see https://eips.ethereum.org/EIPS/eip-2930).
 /// Example test spec: https://github.com/ethereum/tests/blob/5490db3ff58d371c0c74826280256ba016b0bd5c/GeneralStateTests/stExample/accessListExample.json
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessListTuple {
 	/// Address to access

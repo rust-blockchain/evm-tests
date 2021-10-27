@@ -4,3 +4,4 @@
 [submodule "jsontests/res/ethtests"]
 	path = jsontests/res/ethtests
 	url = https://github.com/ethereum/tests
+	tag = 9.0.5
