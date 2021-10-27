@@ -69,7 +69,8 @@ pub fn test(name: &str, test: Test) {
 	let mut backend = MemoryBackend::new(&vicinity, original_state);
 	let metadata = StackSubstateMetadata::new(test.unwrap_to_gas_limit(), &config);
 	let state = MemoryStackState::new(metadata, &backend);
-	let mut executor = StackExecutor::new_with_precompile(state, &config, BTreeMap::new());
+	let precompile = BTreeMap::new();
+	let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompile);
 
 	let code = test.unwrap_to_code();
 	let data = test.unwrap_to_data();
