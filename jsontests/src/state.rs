@@ -1,8 +1,8 @@
 use crate::utils::*;
 use ethjson::spec::ForkSpec;
 use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
-use evm::executor::{
-	self, MemoryStackState, PrecompileFailure, PrecompileOutput, StackExecutor,
+use evm::executor::stack::{
+	MemoryStackState, PrecompileFailure, PrecompileFn, PrecompileOutput, StackExecutor,
 	StackSubstateMetadata,
 };
 use evm::{Config, Context, ExitError, ExitSucceed};
@@ -113,7 +113,7 @@ macro_rules! precompile_entry {
 pub struct JsonPrecompile;
 
 impl JsonPrecompile {
-	pub fn precompile(spec: &ForkSpec) -> Option<BTreeMap<H160, executor::PrecompileFn>> {
+	pub fn precompile(spec: &ForkSpec) -> Option<BTreeMap<H160, PrecompileFn>> {
 		match spec {
 			ForkSpec::Istanbul => {
 				let mut map = BTreeMap::new();
