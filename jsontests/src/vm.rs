@@ -1,8 +1,9 @@
+use crate::mock::{get_state, new_test_ext, setup_state, Runtime};
 use crate::utils::*;
-use evm::backend::{ApplyBackend, MemoryAccount, MemoryBackend, MemoryVicinity};
-use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
-use evm::Config;
-use primitive_types::{H160, U256};
+use evm_utility::evm::backend::MemoryAccount;
+use evm_utility::evm::Config;
+use module_evm::{StackExecutor, StackSubstateMetadata, SubstrateStackState, Vicinity};
+use primitive_types::H160;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::rc::Rc;
@@ -15,18 +16,13 @@ impl Test {
 		unwrap_to_state(&self.0.pre_state)
 	}
 
-	pub fn unwrap_to_vicinity(&self) -> MemoryVicinity {
-		MemoryVicinity {
+	pub fn unwrap_to_vicinity(&self) -> Vicinity {
+		Vicinity {
 			gas_price: self.0.transaction.gas_price.clone().into(),
 			origin: self.0.transaction.origin.clone().into(),
-			block_hashes: Vec::new(),
-			block_number: self.0.env.number.clone().into(),
-			block_coinbase: self.0.env.author.clone().into(),
-			block_timestamp: self.0.env.timestamp.clone().into(),
-			block_difficulty: self.0.env.difficulty.clone().into(),
 			block_gas_limit: self.0.env.gas_limit.clone().into(),
-			chain_id: U256::zero(),
-			block_base_fee_per_gas: self.0.transaction.gas_price.clone().into(),
+			block_difficulty: self.0.env.difficulty.clone().into(),
+			block_coinbase: self.0.env.author.clone().into(),
 		}
 	}
 
@@ -38,8 +34,8 @@ impl Test {
 		Rc::new(self.0.transaction.data.clone().into())
 	}
 
-	pub fn unwrap_to_context(&self) -> evm::Context {
-		evm::Context {
+	pub fn unwrap_to_context(&self) -> evm_utility::evm::Context {
+		evm_utility::evm::Context {
 			address: self.0.transaction.address.clone().into(),
 			caller: self.0.transaction.sender.clone().into(),
 			apparent_value: self.0.transaction.value.clone().into(),
@@ -60,45 +56,60 @@ impl Test {
 }
 
 pub fn test(name: &str, test: Test) {
-	print!("Running test {} ... ", name);
-	flush();
+	new_test_ext().execute_with(|| {
+		print!("Running test {} ... ", name);
+		flush();
 
-	let original_state = test.unwrap_to_pre_state();
-	let vicinity = test.unwrap_to_vicinity();
-	let config = Config::frontier();
-	let mut backend = MemoryBackend::new(&vicinity, original_state);
-	let metadata = StackSubstateMetadata::new(test.unwrap_to_gas_limit(), &config);
-	let state = MemoryStackState::new(metadata, &backend);
-	let precompile = BTreeMap::new();
-	let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompile);
-
-	let code = test.unwrap_to_code();
-	let data = test.unwrap_to_data();
-	let context = test.unwrap_to_context();
-	let mut runtime = evm::Runtime::new(code, data, context, &config);
-
-	let reason = executor.execute(&mut runtime);
-	let gas = executor.gas();
-	let (values, logs) = executor.into_state().deconstruct();
-	backend.apply(values, logs, false);
-
-	if test.0.output.is_none() {
-		print!("{:?} ", reason);
-
-		assert!(!reason.is_succeed());
-		assert!(test.0.post_state.is_none() && test.0.gas_left.is_none());
-
-		println!("succeed");
-	} else {
-		let expected_post_gas = test.unwrap_to_post_gas();
-		print!("{:?} ", reason);
-
-		assert_eq!(
-			runtime.machine().return_value(),
-			test.unwrap_to_return_value()
+		let original_state = test.unwrap_to_pre_state();
+		setup_state(
+			original_state,
+			test.0.env.number.0.as_u64(),
+			test.0.env.timestamp.0.as_u64(),
 		);
-		assert_valid_state(test.0.post_state.as_ref().unwrap(), &backend.state());
-		assert_eq!(gas, expected_post_gas);
-		println!("succeed");
-	}
+
+		let vicinity = test.unwrap_to_vicinity();
+		let config = Config::frontier();
+
+		let metadata = StackSubstateMetadata::new(test.unwrap_to_gas_limit(), 1_000_000, &config);
+		let state = SubstrateStackState::<Runtime>::new(&vicinity, metadata);
+		let mut executor = StackExecutor::new(state, &config);
+
+		let code = test.unwrap_to_code();
+		let data = test.unwrap_to_data();
+		let context = test.unwrap_to_context();
+		let mut runtime = module_evm::evm::Runtime::new(code, data, context, &config);
+
+		let reason = executor.execute(&mut runtime);
+
+		let gas = executor.gas();
+		let s = executor.into_state();
+
+		if test.0.output.is_none() {
+			print!(
+				"Exec reason: {:?} is_succeed: {}",
+				reason,
+				reason.is_succeed()
+			);
+
+			assert!(!reason.is_succeed());
+			assert!(test.0.post_state.is_none() && test.0.gas_left.is_none());
+
+			println!("succeed");
+		} else {
+			let expected_post_gas = test.unwrap_to_post_gas();
+			print!(
+				"Exec reason: {:?} is_succeed: {}",
+				reason,
+				reason.is_succeed()
+			);
+
+			assert_eq!(
+				runtime.machine().return_value(),
+				test.unwrap_to_return_value()
+			);
+			assert_valid_state(test.0.post_state.as_ref().unwrap(), &get_state(&s));
+			assert_eq!(gas, expected_post_gas);
+			println!("succeed");
+		}
+	})
 }

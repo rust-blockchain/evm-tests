@@ -1,4 +1,4 @@
-use evm::backend::MemoryAccount;
+use evm_utility::evm::backend::MemoryAccount;
 use primitive_types::{H160, H256, U256};
 use sha3::{Digest, Keccak256};
 use std::collections::BTreeMap;
@@ -164,14 +164,14 @@ pub mod transaction {
 	use ethjson::maybe::MaybeEmpty;
 	use ethjson::transaction::Transaction;
 	use ethjson::uint::Uint;
-	use evm::gasometer::{self, Gasometer};
+	use evm_utility::evm::gasometer::{self, Gasometer};
 	use primitive_types::{H160, H256, U256};
 
 	pub fn validate(
 		tx: Transaction,
 		block_gas_limit: U256,
 		caller_balance: U256,
-		config: &evm::Config,
+		config: &evm_utility::evm::Config,
 	) -> Result<Transaction, InvalidTxReason> {
 		match intrinsic_gas(&tx, config) {
 			None => return Err(InvalidTxReason::IntrinsicGas),
@@ -194,7 +194,7 @@ pub mod transaction {
 		Ok(tx)
 	}
 
-	fn intrinsic_gas(tx: &Transaction, config: &evm::Config) -> Option<u64> {
+	fn intrinsic_gas(tx: &Transaction, config: &evm_utility::evm::Config) -> Option<u64> {
 		let is_contract_creation = match tx.to {
 			MaybeEmpty::None => true,
 			MaybeEmpty::Some(_) => false,

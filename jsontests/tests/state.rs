@@ -146,6 +146,7 @@ fn st_non_zero_calls() {
 	run("res/ethtests/GeneralStateTests/stNonZeroCallsTest")
 }
 #[test]
+#[ignore]
 fn st_precompiled_contracts() {
 	run("res/ethtests/GeneralStateTests/stPreCompiledContracts")
 }
@@ -201,7 +202,6 @@ fn st_solidity() {
 	run("res/ethtests/GeneralStateTests/stSolidityTest")
 }
 #[test]
-#[ignore]
 fn st_special() {
 	run("res/ethtests/GeneralStateTests/stSpecialTest")
 }
@@ -253,4 +253,24 @@ fn st_zero_knowledge() {
 #[test]
 fn st_zero_knowledge2() {
 	run("res/ethtests/GeneralStateTests/stZeroKnowledge2")
+}
+#[test]
+fn vm_arithmetic() {
+	run("res/ethtests/GeneralStateTests/VMTests/vmArithmeticTest")
+}
+#[test]
+fn vm_bitwise_logic_operation() {
+	run("res/ethtests/GeneralStateTests/VMTests/vmBitwiseLogicOperation")
+}
+#[test]
+fn vm_io_and_flow_operations() {
+	run("res/ethtests/GeneralStateTests/VMTests/vmIOandFlowOperations")
+}
+#[test]
+fn vm_log() {
+	run("res/ethtests/GeneralStateTests/VMTests/vmLogTest")
+}
+#[test]
+fn vm() {
+	run("res/ethtests/GeneralStateTests/VMTests/vmTests")
 }

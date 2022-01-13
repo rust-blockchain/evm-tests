@@ -23,7 +23,7 @@ use crate::{
 	bytes::Bytes,
 	hash::{Address, H256},
 	maybe::MaybeEmpty,
-	spec::{ForkSpec, State as AccountState},
+	spec::{Account, ForkSpec, State as AccountState},
 	transaction::Transaction,
 	uint::Uint,
 	vm::Env,
@@ -168,6 +168,9 @@ pub struct PostStateResult {
 	pub hash: H256,
 	/// Indexes
 	pub indexes: PostStateIndexes,
+	/// Post state.
+	#[serde(rename = "postState")]
+	pub post_state: Option<BTreeMap<Address, Account>>,
 }
 
 #[cfg(test)]
