@@ -178,7 +178,7 @@ ord_parameter_types! {
 	pub const StorageDepositPerByte: Balance = convert_decimals_to_evm(10);
 	pub const TxFeePerGas: Balance = 20_000_000;
 	pub const DeveloperDeposit: Balance = 1000;
-	pub const DeploymentFee: Balance = 200;
+	pub const PublicationFee: Balance = 200;
 	pub const ChainId: u64 = 1;
 }
 
@@ -199,9 +199,9 @@ impl module_evm::Config for Runtime {
 	type NetworkContractOrigin = EnsureSignedBy<NetworkContractAccount, AccountId>;
 	type NetworkContractSource = NetworkContractSource;
 	type DeveloperDeposit = DeveloperDeposit;
-	type DeploymentFee = DeploymentFee;
+	type PublicationFee = PublicationFee;
 	type TreasuryAccount = TreasuryAccount;
-	type FreeDeploymentOrigin = EnsureSignedBy<CouncilAccount, AccountId>;
+	type FreePublicationOrigin = EnsureSignedBy<CouncilAccount, AccountId32>;
 
 	type Runner = module_evm::runner::stack::Runner<Self>;
 	type FindAuthor = AuthorGiven;
@@ -260,7 +260,7 @@ pub fn setup_state(s: BTreeMap<H160, MemoryAccount>, block_number: u64, timestam
 			Some(ContractInfo {
 				code_hash,
 				maintainer: Default::default(),
-				deployed: true,
+				published: true,
 			})
 		} else {
 			None
