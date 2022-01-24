@@ -10,6 +10,7 @@ edition = "2018"
 
 [dependencies]
 module-evm = { path = "../../modules/evm", features = ["with-ethereum-compatibility", "evm-tests"] }
+module-evm-accounts = { path = "../../modules/evm-accounts" }
 evm-utility = { path = "../../modules/evm-utiltity", package = "module-evm-utiltity" }
 module-support = { path = "../../modules/support" }
 module-idle-scheduler  = { path = "../../modules/idle-scheduler" }

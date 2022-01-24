@@ -8,12 +8,10 @@ use frame_support::{
 };
 use frame_system::{AccountInfo, EnsureSignedBy};
 use module_evm::runner::StackState;
-use module_evm::AddressMapping;
 use module_evm::{
 	convert_decimals_to_evm, ContractInfo, EvmTask, MaxCodeSize, SubstrateStackState,
 };
-use module_support::mocks::MockAddressMapping;
-use module_support::DispatchableTask;
+use module_support::{DispatchableTask, AddressMapping};
 use orml_traits::{parameter_type_with_key, BasicCurrencyExtended};
 use primitive_types::{H160, H256, U256};
 use primitives::{
@@ -30,6 +28,7 @@ use sp_runtime::{
 use std::convert::TryInto;
 use std::{collections::BTreeMap, str::FromStr};
 
+pub type AccountId = AccountId32;
 pub type Nonce = u64;
 pub type Balance = u128;
 pub type AccountData = pallet_balances::AccountData<Balance>;
@@ -48,7 +47,7 @@ impl frame_system::Config for Runtime {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = AccountId32;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = Event;
@@ -140,6 +139,15 @@ impl module_idle_scheduler::Config for Runtime {
 	type MinimumWeightRemainInBlock = MinimumWeightRemainInBlock;
 }
 
+impl module_evm_accounts::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type ChainId = ();
+	type AddressMapping = module_evm_accounts::EvmAddressMapping<Runtime>;
+	type TransferAll = Currencies;
+	type WeightInfo = ();
+}
+
 pub struct GasToWeight;
 
 impl Convert<u64, u64> for GasToWeight {
@@ -149,12 +157,12 @@ impl Convert<u64, u64> for GasToWeight {
 }
 
 pub struct AuthorGiven;
-impl FindAuthor<AccountId32> for AuthorGiven {
-	fn find_author<'a, I>(_digests: I) -> Option<AccountId32>
+impl FindAuthor<AccountId> for AuthorGiven {
+	fn find_author<'a, I>(_digests: I) -> Option<AccountId>
 	where
 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
-		Some(MockAddressMapping::get_account_id(&find_author()))
+		Some(<Runtime as module_evm::Config>::AddressMapping::get_account_id(&find_author()))
 	}
 }
 
@@ -163,9 +171,9 @@ parameter_types! {
 }
 
 ord_parameter_types! {
-	pub const CouncilAccount: AccountId32 = AccountId32::from([1u8; 32]);
-	pub const TreasuryAccount: AccountId32 = AccountId32::from([2u8; 32]);
-	pub const NetworkContractAccount: AccountId32 = AccountId32::from([0u8; 32]);
+	pub const CouncilAccount: AccountId = AccountId32::from([1u8; 32]);
+	pub const TreasuryAccount: AccountId = AccountId32::from([2u8; 32]);
+	pub const NetworkContractAccount: AccountId = AccountId32::from([0u8; 32]);
 	pub const NewContractExtraBytes: u32 = 100;
 	pub const StorageDepositPerByte: Balance = convert_decimals_to_evm(10);
 	pub const TxFeePerGas: Balance = 20_000_000;
@@ -175,7 +183,7 @@ ord_parameter_types! {
 }
 
 impl module_evm::Config for Runtime {
-	type AddressMapping = MockAddressMapping;
+	type AddressMapping = module_evm_accounts::EvmAddressMapping<Runtime>;
 	type Currency = Balances;
 	type TransferAll = Currencies;
 	type NewContractExtraBytes = NewContractExtraBytes;
@@ -188,12 +196,12 @@ impl module_evm::Config for Runtime {
 	type GasToWeight = GasToWeight;
 	type ChargeTransactionPayment = ();
 
-	type NetworkContractOrigin = EnsureSignedBy<NetworkContractAccount, AccountId32>;
+	type NetworkContractOrigin = EnsureSignedBy<NetworkContractAccount, AccountId>;
 	type NetworkContractSource = NetworkContractSource;
 	type DeveloperDeposit = DeveloperDeposit;
 	type DeploymentFee = DeploymentFee;
 	type TreasuryAccount = TreasuryAccount;
-	type FreeDeploymentOrigin = EnsureSignedBy<CouncilAccount, AccountId32>;
+	type FreeDeploymentOrigin = EnsureSignedBy<CouncilAccount, AccountId>;
 
 	type Runner = module_evm::runner::stack::Runner<Self>;
 	type FindAuthor = AuthorGiven;
@@ -214,6 +222,7 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		EVM: module_evm::{Pallet, Config<T>, Call, Storage, Event<T>},
+		EVMAccounts: module_evm_accounts::{Pallet, Call, Storage, Event<T>},
 		Tokens: orml_tokens::{Pallet, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Currencies: orml_currencies::{Pallet, Call, Event<T>},
@@ -297,7 +306,7 @@ pub fn setup_state(s: BTreeMap<H160, MemoryAccount>, block_number: u64, timestam
 pub fn get_state(s: &SubstrateStackState<Runtime>) -> BTreeMap<H160, MemoryAccount> {
 	let mut state: BTreeMap<H160, MemoryAccount> = BTreeMap::new();
 	module_evm::Accounts::<Runtime>::iter().for_each(|(address, account)| {
-		let acc = MockAddressMapping::get_account_id(&address);
+		let acc = <Runtime as module_evm::Config>::AddressMapping::get_account_id(&address);
 		if s.deleted(address) {
 			return;
 		}
@@ -360,7 +369,8 @@ pub fn get_state(s: &SubstrateStackState<Runtime>) -> BTreeMap<H160, MemoryAccou
 	});
 
 	frame_system::Account::<Runtime>::iter().for_each(|(acc, data)| {
-		let address = MockAddressMapping::get_or_create_evm_address(&acc);
+		if acc == TreasuryAccount::get() { return; } // skip treasury
+		let address = <Runtime as module_evm::Config>::AddressMapping::get_or_create_evm_address(&acc);
 		if state.contains_key(&address) {
 			return;
 		}
