@@ -20,9 +20,9 @@ impl Test {
 		Vicinity {
 			gas_price: self.0.transaction.gas_price.clone().into(),
 			origin: self.0.transaction.origin.clone().into(),
-			block_gas_limit: self.0.env.gas_limit.clone().into(),
-			block_difficulty: self.0.env.difficulty.clone().into(),
-			block_coinbase: self.0.env.author.clone().into(),
+			block_gas_limit: Some(self.0.env.gas_limit.clone().into()),
+			block_difficulty: Some(self.0.env.difficulty.clone().into()),
+			block_coinbase: Some(self.0.env.author.clone().into()),
 		}
 	}
 

@@ -57,10 +57,10 @@ impl Test {
 			origin: self.unwrap_caller(),
 			// block_hashes: Vec::new(),
 			// block_number: self.0.env.number.clone().into(),
-			block_coinbase: self.0.env.author.clone().into(),
+			block_coinbase: Some(self.0.env.author.clone().into()),
 			// block_timestamp: self.0.env.timestamp.clone().into(),
-			block_difficulty: self.0.env.difficulty.clone().into(),
-			block_gas_limit: self.0.env.gas_limit.clone().into(),
+			block_difficulty: Some(self.0.env.difficulty.clone().into()),
+			block_gas_limit: Some(self.0.env.gas_limit.clone().into()),
 			// chain_id: U256::one(),
 			// block_base_fee_per_gas,
 		})
@@ -333,7 +333,7 @@ fn test_run(name: &str, test: Test) {
 					}
 
 					let actual_fee = executor.fee(vicinity.gas_price).saturated_into::<i128>();
-					deposit(vicinity.block_coinbase, actual_fee);
+					deposit(vicinity.block_coinbase.unwrap(), actual_fee);
 					println!("Gas used: {}", executor.used_gas());
 
 					let refund_fee = total_fee - actual_fee;
