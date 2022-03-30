@@ -38,8 +38,7 @@ use keccak_hash::keccak;
 use log::{trace, warn};
 use num::{BigUint, One, Zero};
 use parity_bytes::BytesRef;
-use parity_crypto::digest;
-use parity_crypto::publickey::{recover, Signature};
+use sha2::Digest;
 
 /// Native implementation of a built-in contract.
 pub trait Implementation: Send + Sync {
@@ -824,30 +823,37 @@ impl Implementation for EcRecover {
 		let mut input = [0; 128];
 		input[..len].copy_from_slice(&i[..len]);
 
-		let hash = H256::from_slice(&input[0..32]);
-		let v = H256::from_slice(&input[32..64]);
-		let r = H256::from_slice(&input[64..96]);
-		let s = H256::from_slice(&input[96..128]);
+		let mut hash = [0; 32];
+		hash.copy_from_slice(&input[0..32]);
 
+		let v = H256::from_slice(&input[32..64]);
 		let bit = match v[31] {
 			27 | 28 if v.0[..31] == [0; 31] => v[31] - 27,
 			_ => {
 				return Ok(());
 			}
 		};
-
-		let s = Signature::from_rsv(&r, &s, bit);
-		if s.is_valid() {
+		let mut signature = [0; 64];
+		signature[..64].copy_from_slice(&input[64..128]);
+		let signature = libsecp256k1::Signature::parse_standard(&signature);
+		if bit <= 1 && signature.is_ok() {
 			// The builtin allows/requires all-zero messages to be valid to
 			// recover the public key. Use of such messages is disallowed in
 			// `rust-secp256k1` and this is a workaround for that. It is not an
 			// openethereum-level error to fail here; instead we return all
 			// zeroes and let the caller interpret that outcome.
-			let recovery_message = hash;
-			if let Ok(p) = recover(&s, &recovery_message) {
-				let r = keccak(p);
-				output.write(0, &[0; 12]);
-				output.write(12, &r.as_bytes()[12..]);
+			let message = libsecp256k1::Message::parse(&hash);
+			let recovery_id = libsecp256k1::RecoveryId::parse(bit);
+			if let Ok(recovery_id) = recovery_id {
+				if let Ok(p) = libsecp256k1::recover(
+					&message,
+					&signature.unwrap(),
+					&recovery_id,
+				) {
+					let r = keccak(p.serialize());
+					output.write(0, &[0; 12]);
+					output.write(12, &r.as_bytes()[12..]);
+				}
 			}
 		}
 
@@ -857,8 +863,9 @@ impl Implementation for EcRecover {
 
 impl Implementation for Sha256 {
 	fn execute(&self, input: &[u8], output: &mut BytesRef) -> Result<(), &'static str> {
-		let d = digest::sha256(input);
-		output.write(0, &*d);
+		let mut hasher = sha2::Sha256::new();
+		hasher.update(input);
+		output.write(0, &hasher.finalize());
 		Ok(())
 	}
 }
@@ -919,9 +926,8 @@ impl Implementation for Blake2F {
 
 impl Implementation for Ripemd160 {
 	fn execute(&self, input: &[u8], output: &mut BytesRef) -> Result<(), &'static str> {
-		let hash = digest::ripemd160(input);
 		output.write(0, &[0; 12][..]);
-		output.write(12, &hash);
+		output.write(12, &ripemd::Ripemd160::digest(input));
 		Ok(())
 	}
 }
