@@ -850,7 +850,7 @@ impl Implementation for EcRecover {
 					&signature.unwrap(),
 					&recovery_id,
 				) {
-					let r = keccak(p.serialize());
+					let r = keccak(&p.serialize()[1..65]);
 					output.write(0, &[0; 12]);
 					output.write(12, &r.as_bytes()[12..]);
 				}
