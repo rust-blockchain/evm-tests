@@ -7,7 +7,8 @@ use evm::executor::stack::{
 };
 use evm::{Config, Context, ExitError, ExitSucceed};
 use lazy_static::lazy_static;
-use parity_crypto::publickey;
+use libsecp256k1::SecretKey;
+use sha3::{Digest, Keccak256};
 use primitive_types::{H160, H256, U256};
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -22,15 +23,15 @@ impl Test {
 	}
 
 	pub fn unwrap_caller(&self) -> H160 {
-		let secret_key: H256 = self.0.transaction.secret.clone().unwrap().into();
-		let secret = publickey::Secret::import_key(&secret_key[..]).unwrap();
-		let public = publickey::KeyPair::from_secret(secret)
-			.unwrap()
-			.public()
-			.clone();
-		let sender = publickey::public_to_address(&public);
-
-		sender
+		let hash: H256 = self.0.transaction.secret.clone().unwrap().into();
+		let mut secret_key = [0; 32];
+		secret_key.copy_from_slice(&hash.as_bytes()[..]);
+		let secret = SecretKey::parse(&secret_key);
+		let public = libsecp256k1::PublicKey::from_secret_key(&secret.unwrap());
+		let mut res = [0u8; 64];
+		res.copy_from_slice(&public.serialize()[1..65]);
+		
+		H160::from(H256::from_slice(Keccak256::digest(&res).as_slice()))
 	}
 
 	pub fn unwrap_to_vicinity(&self, spec: &ForkSpec) -> Option<MemoryVicinity> {
