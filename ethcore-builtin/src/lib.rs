@@ -845,11 +845,7 @@ impl Implementation for EcRecover {
 			let message = libsecp256k1::Message::parse(&hash);
 			let recovery_id = libsecp256k1::RecoveryId::parse(bit);
 			if let Ok(recovery_id) = recovery_id {
-				if let Ok(p) = libsecp256k1::recover(
-					&message,
-					&signature.unwrap(),
-					&recovery_id,
-				) {
+				if let Ok(p) = libsecp256k1::recover(&message, &signature.unwrap(), &recovery_id) {
 					let r = keccak(&p.serialize()[1..65]);
 					output.write(0, &[0; 12]);
 					output.write(12, &r.as_bytes()[12..]);
