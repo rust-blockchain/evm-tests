@@ -8,9 +8,9 @@ use evm::executor::stack::{
 use evm::{Config, Context, ExitError, ExitSucceed};
 use lazy_static::lazy_static;
 use libsecp256k1::SecretKey;
-use sha3::{Digest, Keccak256};
 use primitive_types::{H160, H256, U256};
 use serde::Deserialize;
+use sha3::{Digest, Keccak256};
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 
@@ -30,7 +30,7 @@ impl Test {
 		let public = libsecp256k1::PublicKey::from_secret_key(&secret.unwrap());
 		let mut res = [0u8; 64];
 		res.copy_from_slice(&public.serialize()[1..65]);
-		
+
 		H160::from(H256::from_slice(Keccak256::digest(&res).as_slice()))
 	}
 
@@ -97,12 +97,7 @@ lazy_static! {
 
 macro_rules! precompile_entry {
 	($map:expr, $builtins:expr, $index:expr) => {
-		let x: fn(
-			&[u8],
-			Option<u64>,
-			&Context,
-			bool,
-		) -> Result<PrecompileOutput, PrecompileFailure> =
+		let x: PrecompileFn =
 			|input: &[u8], gas_limit: Option<u64>, _context: &Context, _is_static: bool| {
 				let builtin = $builtins.get(&H160::from_low_u64_be($index)).unwrap();
 				Self::exec_as_precompile(builtin, input, gas_limit)
@@ -167,7 +162,7 @@ impl JsonPrecompile {
 		builtin: &ethcore_builtin::Builtin,
 		input: &[u8],
 		gas_limit: Option<u64>,
-	) -> Result<PrecompileOutput, PrecompileFailure> {
+	) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
 		let cost = builtin.cost(input, 0);
 
 		if let Some(target_gas) = gas_limit {
@@ -180,12 +175,13 @@ impl JsonPrecompile {
 
 		let mut output = Vec::new();
 		match builtin.execute(input, &mut parity_bytes::BytesRef::Flexible(&mut output)) {
-			Ok(()) => Ok(PrecompileOutput {
-				exit_status: ExitSucceed::Stopped,
-				output,
-				cost: cost.as_u64(),
-				logs: Vec::new(),
-			}),
+			Ok(()) => Ok((
+				PrecompileOutput {
+					exit_status: ExitSucceed::Stopped,
+					output,
+				},
+				cost.as_u64(),
+			)),
 			Err(e) => Err(PrecompileFailure::Error {
 				exit_status: ExitError::Other(e.into()),
 			}),
