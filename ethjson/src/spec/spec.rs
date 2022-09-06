@@ -44,6 +44,8 @@ pub enum ForkSpec {
 	Berlin,
 	/// London (To be announced)
 	London,
+	/// Merge/Paris (To be announced)
+	Merge,
 	/// Byzantium transition test-net
 	EIP158ToByzantiumAt5,
 	/// Homestead transition test-net
