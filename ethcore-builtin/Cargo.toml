@@ -9,9 +9,9 @@ edition = "2018"
 bn = { git = "https://github.com/paritytech/bn", default-features = false }
 byteorder = "1.3.2"
 eip-152 = { path = "../EIP-152" }
-ethereum-types = "0.13"
+ethereum-types = "0.14"
 ethjson = { path = "../ethjson" }
-keccak-hash = "0.7"
+keccak-hash = "0.10"
 log = "0.4"
 num = "0.2"
 parity-bytes = "0.1"
