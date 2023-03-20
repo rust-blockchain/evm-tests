@@ -13,7 +13,7 @@ pub fn run(dir: &str) {
 	for entry in fs::read_dir(dest).unwrap() {
 		let entry = entry.unwrap();
 		if let Some(s) = entry.file_name().to_str() {
-			if s.starts_with(".") {
+			if s.starts_with('.') {
 				continue;
 			}
 		}
@@ -23,8 +23,8 @@ pub fn run(dir: &str) {
 		let file = File::open(path).expect("Open file failed");
 
 		let reader = BufReader::new(file);
-		let coll = serde_json::from_reader::<_, HashMap<String, statetests::Test>>(reader)
-			.expect("Parse test cases failed");
+		let coll: HashMap<String, statetests::Test> =
+			serde_json::from_reader(reader).expect("Parse test cases failed");
 
 		for (name, test) in coll {
 			statetests::test(&name, test);

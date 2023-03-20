@@ -23,15 +23,15 @@ impl Test {
 	}
 
 	pub fn unwrap_caller(&self) -> H160 {
-		let hash: H256 = self.0.transaction.secret.clone().unwrap().into();
+		let hash: H256 = self.0.transaction.secret.unwrap().into();
 		let mut secret_key = [0; 32];
-		secret_key.copy_from_slice(&hash.as_bytes()[..]);
+		secret_key.copy_from_slice(hash.as_bytes());
 		let secret = SecretKey::parse(&secret_key);
 		let public = libsecp256k1::PublicKey::from_secret_key(&secret.unwrap());
 		let mut res = [0u8; 64];
 		res.copy_from_slice(&public.serialize()[1..65]);
 
-		H160::from(H256::from_slice(Keccak256::digest(&res).as_slice()))
+		H160::from(H256::from_slice(Keccak256::digest(res).as_slice()))
 	}
 
 	pub fn unwrap_to_vicinity(&self, spec: &ForkSpec) -> Option<MemoryVicinity> {
@@ -70,17 +70,36 @@ impl Test {
 			return None;
 		}
 
+		let block_randomness = if spec.is_eth2() {
+			self.0.env.random.map(|r| {
+                // Convert between U256 and H256. U256 is in little-endian but since H256 is just
+                // a string-like byte array, it's big endian (MSB is the first element of the array).
+                //
+                // Byte order here is important because this opcode has the same value as DIFFICULTY
+                // (0x44), and so for older forks of Ethereum, the threshold value of 2^64 is used to
+                // distinguish between the two: if it's below, the value corresponds to the DIFFICULTY
+                // opcode, otherwise to the PREVRANDAO opcode.
+                let mut buf = [0u8; 32];
+                r.0.to_big_endian(&mut buf);
+                H256(buf)
+            })
+		} else {
+			None
+		};
+
+
 		Some(MemoryVicinity {
 			gas_price,
 			origin: self.unwrap_caller(),
 			block_hashes: Vec::new(),
-			block_number: self.0.env.number.clone().into(),
-			block_coinbase: self.0.env.author.clone().into(),
-			block_timestamp: self.0.env.timestamp.clone().into(),
-			block_difficulty: self.0.env.difficulty.clone().into(),
-			block_gas_limit: self.0.env.gas_limit.clone().into(),
+			block_number: self.0.env.number.into(),
+			block_coinbase: self.0.env.author.into(),
+			block_timestamp: self.0.env.timestamp.into(),
+			block_difficulty: self.0.env.difficulty.into(),
+			block_gas_limit: self.0.env.gas_limit.into(),
 			chain_id: U256::one(),
 			block_base_fee_per_gas,
+			block_randomness,
 		})
 	}
 }
@@ -139,6 +158,10 @@ impl JsonPrecompile {
 			}
 			// precompiles for London and Berlin are the same
 			ForkSpec::London => Self::precompile(&ForkSpec::Berlin),
+			// precompiles for Merge and Berlin are the same
+			ForkSpec::Merge => Self::precompile(&ForkSpec::Berlin),
+			// precompiles for Shanghai and Berlin are the same
+			ForkSpec::Shanghai => Self::precompile(&ForkSpec::Berlin),
 			_ => None,
 		}
 	}
@@ -211,8 +234,10 @@ fn test_run(name: &str, test: Test) {
 			ethjson::spec::ForkSpec::Istanbul => (Config::istanbul(), true),
 			ethjson::spec::ForkSpec::Berlin => (Config::berlin(), true),
 			ethjson::spec::ForkSpec::London => (Config::london(), true),
+			ethjson::spec::ForkSpec::Merge => (Config::merge(), true),
+			ethjson::spec::ForkSpec::Shanghai => (Config::shanghai(), true),
 			spec => {
-				println!("Skip spec {:?}", spec);
+				println!("Skip spec {spec:?}");
 				continue;
 			}
 		};
@@ -288,8 +313,9 @@ fn test_run(name: &str, test: Test) {
 				}
 
 				let actual_fee = executor.fee(vicinity.gas_price);
-				let mniner_reward = if let ForkSpec::London = spec {
-					// see EIP-1559
+				// Forks after London burn miner rewards and thus have different gas fee
+				// calculation (see EIP-1559)
+				let miner_reward = if spec.is_eth2() {
 					let max_priority_fee_per_gas = test.0.transaction.max_priority_fee_per_gas();
 					let max_fee_per_gas = test.0.transaction.max_fee_per_gas();
 					let base_fee_per_gas = vicinity.block_base_fee_per_gas;
@@ -299,11 +325,14 @@ fn test_run(name: &str, test: Test) {
 				} else {
 					actual_fee
 				};
+
 				executor
 					.state_mut()
-					.deposit(vicinity.block_coinbase, mniner_reward);
+					.deposit(vicinity.block_coinbase, miner_reward);
 				executor.state_mut().deposit(caller, total_fee - actual_fee);
+
 				let (values, logs) = executor.into_state().deconstruct();
+
 				backend.apply(values, logs, delete_empty);
 			}
 
