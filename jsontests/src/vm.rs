@@ -75,7 +75,7 @@ pub fn test(name: &str, test: Test) {
 	let code = test.unwrap_to_code();
 	let data = test.unwrap_to_data();
 	let context = test.unwrap_to_context();
-	let mut runtime = evm::Runtime::new(code, data, context, &config);
+	let mut runtime = evm::Runtime::new(code, data, context, config.stack_limit, config.memory_limit);
 
 	let reason = executor.execute(&mut runtime);
 	let gas = executor.gas();
