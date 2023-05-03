@@ -121,6 +121,10 @@ pub struct Env {
 	#[serde(rename = "currentBaseFee")]
 	#[serde(default)]
 	pub block_base_fee_per_gas: Uint,
+	/// Pre-seeded random value for testing
+	#[serde(rename = "currentRandom")]
+	#[serde(default)]
+	pub random: Option<Uint>,
 }
 
 #[cfg(test)]
@@ -145,7 +149,8 @@ mod tests {
 				"currentDifficulty" : "0x0100",
 				"currentGasLimit" : "0x0f4240",
 				"currentNumber" : "0x00",
-				"currentTimestamp" : "0x01"
+				"currentTimestamp" : "0x01",
+				"currentRandom" : "0x01"
 			},
 			"exec" : {
 				"address" : "0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6",
@@ -192,7 +197,8 @@ mod tests {
 				gas_limit: Uint(0x0f4240.into()),
 				number: Uint(0.into()),
 				timestamp: Uint(1.into()),
-				block_base_fee_per_gas: Uint(0.into())
+				block_base_fee_per_gas: Uint(0.into()),
+				random: Some(Uint(1.into())),
 			}
 		);
 		assert_eq!(

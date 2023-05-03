@@ -144,9 +144,9 @@ pub fn assert_valid_hash(h: &H256, b: &BTreeMap<H160, MemoryAccount>) {
 		.collect::<Vec<_>>();
 
 	let root = ethereum::util::sec_trie_root(tree);
-	let expect = h.clone().into();
+	let expect = h;
 
-	if root != expect {
+	if root != *expect {
 		panic!(
 			"Hash not equal; calculated: {:?}, expect: {:?}\nState: {:#x?}",
 			root, expect, b
@@ -157,7 +157,7 @@ pub fn assert_valid_hash(h: &H256, b: &BTreeMap<H160, MemoryAccount>) {
 pub fn flush() {
 	use std::io::{self, Write};
 
-	io::stdout().flush().ok().expect("Could not flush stdout");
+	io::stdout().flush().expect("Could not flush stdout");
 }
 
 pub mod transaction {
