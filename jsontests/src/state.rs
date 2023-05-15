@@ -72,21 +72,18 @@ impl Test {
 
 		let block_randomness = if spec.is_eth2() {
 			self.0.env.random.map(|r| {
-                // Convert between U256 and H256. U256 is in little-endian but since H256 is just
-                // a string-like byte array, it's big endian (MSB is the first element of the array).
-                //
-                // Byte order here is important because this opcode has the same value as DIFFICULTY
-                // (0x44), and so for older forks of Ethereum, the threshold value of 2^64 is used to
-                // distinguish between the two: if it's below, the value corresponds to the DIFFICULTY
-                // opcode, otherwise to the PREVRANDAO opcode.
-                let mut buf = [0u8; 32];
-                r.0.to_big_endian(&mut buf);
-                H256(buf)
-            })
+				// Convert between U256 and H256. U256 is in little-endian but since H256 is just
+				// a string-like byte array, it's big endian (MSB is the first element of the array).
+				//
+				// Byte order here is important because this opcode has the same value as DIFFICULTY
+				// (0x44), and so for older forks of Ethereum, the threshold value of 2^64 is used to
+				// distinguish between the two: if it's below, the value corresponds to the DIFFICULTY
+				// opcode, otherwise to the PREVRANDAO opcode.
+				u256_to_h256(r.0)
+			})
 		} else {
 			None
 		};
-
 
 		Some(MemoryVicinity {
 			gas_price,
@@ -261,6 +258,25 @@ fn test_run(name: &str, test: Test) {
 			let transaction = test.0.transaction.select(&state.indexes);
 			let mut backend = MemoryBackend::new(&vicinity, original_state.clone());
 
+			// Test case may be expected to fail with an unsupported tx type if the current fork is
+			// older than Berlin (see EIP-2718). However, this is not implemented in sputnik itself and rather
+			// in the code hosting sputnik. https://github.com/rust-blockchain/evm/pull/40
+			let tx_type = TxType::from_txbytes(&state.txbytes);
+			if matches!(
+				spec,
+				ForkSpec::EIP150
+					| ForkSpec::EIP158 | ForkSpec::Frontier
+					| ForkSpec::Homestead
+					| ForkSpec::Byzantium
+					| ForkSpec::Constantinople
+					| ForkSpec::ConstantinopleFix
+					| ForkSpec::Istanbul
+			) && tx_type != TxType::Legacy
+				&& state.expect_exception == Some("TR_TypeNotSupported".to_string())
+			{
+				continue;
+			}
+
 			// Only execute valid transactions
 			if let Ok(transaction) = crate::utils::transaction::validate(
 				transaction,
@@ -339,6 +355,34 @@ fn test_run(name: &str, test: Test) {
 			assert_valid_hash(&state.hash.0, backend.state());
 
 			println!("passed");
+		}
+	}
+}
+
+/// Denotes the type of transaction.
+#[derive(Debug, PartialEq)]
+enum TxType {
+	/// All transactions before EIP-2718 are legacy.
+	Legacy,
+	/// https://eips.ethereum.org/EIPS/eip-2718
+	AccessList,
+	/// https://eips.ethereum.org/EIPS/eip-1559
+	DynamicFee,
+}
+
+impl TxType {
+	/// Whether this is a legacy, access list, dynamic fee, etc transaction
+	// Taken from geth's core/types/transaction.go/UnmarshalBinary, but we only detect the transaction
+	// type rather than unmarshal the entire payload.
+	fn from_txbytes(txbytes: &[u8]) -> Self {
+		match txbytes[0] {
+			b if b > 0x7f => Self::Legacy,
+			1 => Self::AccessList,
+			2 => Self::DynamicFee,
+			_ => panic!(
+				"Unknown tx type. \
+You may need to update the TxType enum if Ethereum introduced new enveloped transaction types."
+			),
 		}
 	}
 }
