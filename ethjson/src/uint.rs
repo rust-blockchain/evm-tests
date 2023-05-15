@@ -82,19 +82,25 @@ impl<'a> Visitor<'a> for UintVisitor {
 	where
 		E: Error,
 	{
+		let parse = |value: &str| {
+			if value.len() > 64 {
+				return Err(Error::custom(
+					format!(
+						"Invalid hex value 0x{value}: value too big (length={})",
+						value.len()
+					)
+					.as_str(),
+				));
+			}
+			U256::from_str(value)
+				.map_err(|e| Error::custom(format!("Invalid hex value 0x{value}: {e}").as_str()))
+		};
+
 		let value = match value.len() {
 			0 => U256::from(0),
 			2 if value.starts_with("0x") => U256::from(0),
-			_ if value.starts_with("0x") => {
-				if value.len() > 66 {
-					return Err(Error::custom(
-						format!("Invalid hex value {}: value too big", value).as_str(),
-					));
-				}
-				U256::from_str(&value[2..]).map_err(|e| {
-					Error::custom(format!("Invalid hex value {}: {}", value, e).as_str())
-				})?
-			}
+			_ if value.starts_with("0x:bigint 0x") => parse(&value[12..])?,
+			_ if value.starts_with("0x") => parse(&value[2..])?,
 			_ => U256::from_dec_str(value).map_err(|e| {
 				Error::custom(format!("Invalid decimal value {}: {:?}", value, e).as_str())
 			})?,
@@ -177,7 +183,7 @@ mod test {
 		assert_eq!(
 			err.to_string(),
 			format!(
-				"Invalid hex value {}: value too big at line 1 column 69",
+				"Invalid hex value {}: value too big (length=65) at line 1 column 69",
 				hex
 			)
 		);

@@ -1,8 +1,8 @@
 use evm_jsontests::state as statetests;
-use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::{collections::HashMap, path::Path};
 
 pub fn run(dir: &str) {
 	let _ = env_logger::try_init();
@@ -20,16 +20,55 @@ pub fn run(dir: &str) {
 
 		let path = entry.path();
 
-		let file = File::open(path).expect("Open file failed");
+		if should_skip(&path) {
+			println!("Skipping test case {path:?}");
+			continue;
+		}
+
+		let file = File::open(&path).expect("Open file failed");
 
 		let reader = BufReader::new(file);
-		let coll: HashMap<String, statetests::Test> =
-			serde_json::from_reader(reader).expect("Parse test cases failed");
+		let coll: HashMap<String, statetests::Test> = serde_json::from_reader(reader)
+			.unwrap_or_else(|e| {
+				panic!("Parsing test case {:?} failed: {:?}", path, e);
+			});
 
 		for (name, test) in coll {
 			statetests::test(&name, test);
 		}
 	}
+}
+
+// NOTE: Add a comment here explaining why you're skipping a test case.
+const SKIPPED_CASES: &[&str] = &[
+	// This is an expected failure case for testing that the VM rejects
+	// transactions with values that are too large, but it's geth
+	// specific because geth parses the hex string later in the test
+	// run, whereas this test runner parses everything up-front before
+	// running the test.
+	"stTransactionTest/ValueOverflow",
+	// The below test cases are failing in geth too and as such are
+	// skipped here until they are fixed there (otherwise we don't know
+	// what the expected value should be for each test output).
+	"stTransactionTest/HighGasPrice",
+	"stCreateTest/CreateTransactionHighNonce",
+];
+
+fn should_skip(path: &Path) -> bool {
+	let matches = |case: &str| {
+		let file_stem = path.file_stem().unwrap();
+		let dir_path = path.parent().unwrap();
+		let dir_name = dir_path.file_name().unwrap();
+		Path::new(dir_name).join(file_stem) == Path::new(case)
+	};
+
+	for case in SKIPPED_CASES {
+		if matches(case) {
+			return true;
+		}
+	}
+
+	false
 }
 
 #[test]
