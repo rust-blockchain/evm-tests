@@ -79,9 +79,7 @@ impl Test {
 				// (0x44), and so for older forks of Ethereum, the threshold value of 2^64 is used to
 				// distinguish between the two: if it's below, the value corresponds to the DIFFICULTY
 				// opcode, otherwise to the PREVRANDAO opcode.
-				let mut buf = [0u8; 32];
-				r.0.to_big_endian(&mut buf);
-				H256(buf)
+				u256_to_h256(r.0)
 			})
 		} else {
 			None
