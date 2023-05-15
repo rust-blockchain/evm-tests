@@ -130,7 +130,7 @@ impl MultiTransaction {
 			r: Default::default(),
 			s: Default::default(),
 			v: Default::default(),
-			secret: self.secret.clone(),
+			secret: self.secret,
 			access_list,
 		}
 	}
@@ -163,11 +163,16 @@ pub struct PostStateIndexes {
 
 /// State test indexed state result deserialization.
 #[derive(Debug, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PostStateResult {
 	/// Post state hash
 	pub hash: H256,
 	/// Indexes
 	pub indexes: PostStateIndexes,
+	/// Expected error if the test is meant to fail
+	pub expect_exception: Option<String>,
+	/// Transaction bytes
+	pub txbytes: Bytes,
 }
 
 #[cfg(test)]
@@ -204,20 +209,24 @@ mod tests {
 				"EIP150": [
 					{
 						"hash": "3e6dacc1575c6a8c76422255eca03529bbf4c0dda75dfc110b22d6dc4152396f",
+                        "txbytes" : "0xf861800a84042c1d8094b94f5374fce5edbc8e2a8697c15331677e6ebf0b80801ca0f141d67812db948c9a4ea43c27d695248205c121ae8d924d23517ab09e38f369a03fe3cfedb4c9a7e61340b6fec87917690e92082f752ad820ad5006c7d49185ed",
 						"indexes": { "data": 0, "gas": 0, "value": 0 }
 					},
 					{
 						"hash": "99a450d8ce5b987a71346d8a0a1203711f770745c7ef326912e46761f14cd764",
+                        "txbytes" : "0xf861800a84042c1d8094b94f5374fce5edbc8e2a8697c15331677e6ebf0b80801ca0f141d67812db948c9a4ea43c27d695248205c121ae8d924d23517ab09e38f369a03fe3cfedb4c9a7e61340b6fec87917690e92082f752ad820ad5006c7d49185ed",
 						"indexes": { "data": 0, "gas": 0, "value": 1 }
 					}
 				],
 				"EIP158": [
 					{
 						"hash": "3e6dacc1575c6a8c76422255eca03529bbf4c0dda75dfc110b22d6dc4152396f",
+                        "txbytes" : "0xf861800a84042c1d8094b94f5374fce5edbc8e2a8697c15331677e6ebf0b80801ca0f141d67812db948c9a4ea43c27d695248205c121ae8d924d23517ab09e38f369a03fe3cfedb4c9a7e61340b6fec87917690e92082f752ad820ad5006c7d49185ed",
 						"indexes": { "data": 0, "gas": 0, "value": 0 }
 					},
 					{
 						"hash": "99a450d8ce5b987a71346d8a0a1203711f770745c7ef326912e46761f14cd764",
+                        "txbytes" : "0xf861800a84042c1d8094b94f5374fce5edbc8e2a8697c15331677e6ebf0b80801ca0f141d67812db948c9a4ea43c27d695248205c121ae8d924d23517ab09e38f369a03fe3cfedb4c9a7e61340b6fec87917690e92082f752ad820ad5006c7d49185ed",
 						"indexes": { "data": 0, "gas": 0, "value": 1  }
 					}
 				]
