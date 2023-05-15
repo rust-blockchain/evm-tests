@@ -261,19 +261,18 @@ fn test_run(name: &str, test: Test) {
 			// Test case may be expected to fail with an unsupported tx type if the current fork is
 			// older than Berlin (see EIP-2718). However, this is not implemented in sputnik itself and rather
 			// in the code hosting sputnik. https://github.com/rust-blockchain/evm/pull/40
-			let tx_type = TxType::from_txbytes(&state.txbytes);
-			if matches!(
-				spec,
-				ForkSpec::EIP150
-					| ForkSpec::EIP158 | ForkSpec::Frontier
-					| ForkSpec::Homestead
-					| ForkSpec::Byzantium
-					| ForkSpec::Constantinople
-					| ForkSpec::ConstantinopleFix
-					| ForkSpec::Istanbul
-			) && tx_type != TxType::Legacy
-				&& state.expect_exception == Some("TR_TypeNotSupported".to_string())
-			{
+			let expect_tx_type_not_supported =
+				matches!(
+					spec,
+					ForkSpec::EIP150
+						| ForkSpec::EIP158 | ForkSpec::Frontier
+						| ForkSpec::Homestead | ForkSpec::Byzantium
+						| ForkSpec::Constantinople
+						| ForkSpec::ConstantinopleFix
+						| ForkSpec::Istanbul
+				) && TxType::from_txbytes(&state.txbytes) != TxType::Legacy
+					&& state.expect_exception.as_deref() == Some("TR_TypeNotSupported");
+			if expect_tx_type_not_supported {
 				continue;
 			}
 
