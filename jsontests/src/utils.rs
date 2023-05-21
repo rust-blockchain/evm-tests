@@ -12,7 +12,7 @@ pub fn u256_to_h256(u: U256) -> H256 {
 pub fn unwrap_to_account(s: &ethjson::spec::Account) -> MemoryAccount {
 	MemoryAccount {
 		balance: s.balance.clone().unwrap().into(),
-		nonce: s.nonce.unwrap().0.as_u64(),
+		nonce: s.nonce.unwrap().0,
 		code: s.code.clone().unwrap().into(),
 		storage: s
 			.storage
@@ -48,7 +48,7 @@ pub fn unwrap_to_state(a: &ethjson::spec::State) -> BTreeMap<H160, MemoryAccount
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrieAccount {
 	/// Nonce of the account.
-	pub nonce: u64,
+	pub nonce: U256,
 	/// Balance of the account.
 	pub balance: U256,
 	/// Storage root of the account.
