@@ -82,7 +82,7 @@ pub fn test(name: &str, test: Test) {
 	let config = Config::frontier();
 	let mut backend = MemoryBackend::new(&vicinity, original_state);
 	let metadata = StackSubstateMetadata::new(test.unwrap_to_gas_limit(), &config);
-	let state = MemoryStackState::new(metadata, &backend);
+	let state = MemoryStackState::new(metadata, &mut backend);
 	let precompile = BTreeMap::new();
 	let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompile);
 
