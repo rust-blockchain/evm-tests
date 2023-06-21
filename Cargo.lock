@@ -520,7 +520,7 @@ dependencies = [
 
 [[package]]
 name = "evm"
-version = "0.37.0"
+version = "0.39.0"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "evm-core"
-version = "0.37.0"
+version = "0.39.0"
 dependencies = [
  "parity-scale-codec",
  "primitive-types",
@@ -549,7 +549,7 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.37.0"
+version = "0.39.0"
 dependencies = [
  "environmental",
  "evm-core",
@@ -580,7 +580,7 @@ dependencies = [
 
 [[package]]
 name = "evm-runtime"
-version = "0.37.0"
+version = "0.39.0"
 dependencies = [
  "auto_impl",
  "environmental",
