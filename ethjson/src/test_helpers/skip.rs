@@ -18,7 +18,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 
 /// Test to skip (only if issue ongoing)
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct SkipTests {
 	/// Block tests
 	pub block: Vec<SkipBlockchainTest>,
@@ -31,7 +31,7 @@ pub struct SkipTests {
 }
 
 /// Block test to skip.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct SkipBlockchainTest {
 	/// Issue reference.
 	pub reference: String,
@@ -42,7 +42,7 @@ pub struct SkipBlockchainTest {
 }
 
 /// State test to skip.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct SkipStateTest {
 	/// Issue reference.
 	pub reference: String,
@@ -53,7 +53,7 @@ pub struct SkipStateTest {
 }
 
 /// State subtest to skip.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct StateSkipSubStates {
 	/// State test number of this item. Or '*' for all state.
 	pub subnumbers: Vec<String>,
@@ -64,7 +64,7 @@ pub struct StateSkipSubStates {
 impl SkipTests {
 	/// Empty skip states.
 	pub fn empty() -> Self {
-		SkipTests {
+		Self {
 			block: Vec::new(),
 			state: Vec::new(),
 			legacy_block: Vec::new(),

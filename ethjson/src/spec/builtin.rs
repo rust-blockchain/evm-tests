@@ -22,7 +22,7 @@ use crate::uint::Uint;
 use serde::Deserialize;
 
 /// Linear pricing.
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Linear {
 	/// Base price.
@@ -32,7 +32,7 @@ pub struct Linear {
 }
 
 /// Pricing for modular exponentiation.
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Modexp {
 	/// Price divisor.
@@ -42,7 +42,7 @@ pub struct Modexp {
 }
 
 /// Pricing for constant alt_bn128 operations (ECADD and ECMUL)
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct AltBn128ConstOperations {
 	/// price
@@ -50,7 +50,7 @@ pub struct AltBn128ConstOperations {
 }
 
 /// Pricing for alt_bn128_pairing.
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct AltBn128Pairing {
 	/// Base price.
@@ -60,7 +60,7 @@ pub struct AltBn128Pairing {
 }
 
 /// Bls12 pairing price
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Bls12Pairing {
 	/// Price per final exp
@@ -70,7 +70,7 @@ pub struct Bls12Pairing {
 }
 
 /// Pricing for constant Bls12 operations (ADD and MUL in G1 and G2, as well as mappings)
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Bls12ConstOperations {
 	/// Fixed price.
@@ -78,7 +78,7 @@ pub struct Bls12ConstOperations {
 }
 
 /// Pricing for constant Bls12 operations (ADD and MUL in G1, as well as mappings)
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Bls12G1Multiexp {
 	/// Base const of the operation (G1 or G2 multiplication)
@@ -86,7 +86,7 @@ pub struct Bls12G1Multiexp {
 }
 
 /// Pricing for constant Bls12 operations (ADD and MUL in G2, as well as mappings)
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Bls12G2Multiexp {
 	/// Base const of the operation (G1 or G2 multiplication)
@@ -94,7 +94,7 @@ pub struct Bls12G2Multiexp {
 }
 
 /// Pricing variants.
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "snake_case")]
 pub enum Pricing {
@@ -134,7 +134,7 @@ pub struct BuiltinCompat {
 }
 
 /// Spec builtin.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Builtin {
 	/// Builtin name.
 	pub name: String,
@@ -181,7 +181,7 @@ enum PricingCompat {
 }
 
 /// Price for a builtin, with the block number to activate it on
-#[derive(Debug, PartialEq, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct PricingAt {
 	/// Description of the activation, e.g. "PunyPony HF, March 12, 2025".

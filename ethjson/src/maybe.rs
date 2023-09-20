@@ -26,7 +26,7 @@ use serde::{Deserialize, Deserializer};
 use crate::uint::Uint;
 
 /// Deserializer of empty string values into optionals.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum MaybeEmpty<T> {
 	/// Some.
 	Some(T),
@@ -51,8 +51,8 @@ struct MaybeEmptyVisitor<T> {
 }
 
 impl<T> MaybeEmptyVisitor<T> {
-	fn new() -> Self {
-		MaybeEmptyVisitor {
+	const fn new() -> Self {
+		Self {
 			_phantom: PhantomData,
 		}
 	}
@@ -87,9 +87,9 @@ where
 	}
 }
 
-impl<T> Into<Option<T>> for MaybeEmpty<T> {
-	fn into(self) -> Option<T> {
-		match self {
+impl<T> From<MaybeEmpty<T>> for Option<T> {
+	fn from(val: MaybeEmpty<T>) -> Self {
+		match val {
 			MaybeEmpty::Some(s) => Some(s),
 			MaybeEmpty::None => None,
 		}
@@ -99,21 +99,21 @@ impl<T> Into<Option<T>> for MaybeEmpty<T> {
 #[cfg(test)]
 impl From<Uint> for MaybeEmpty<Uint> {
 	fn from(uint: Uint) -> Self {
-		MaybeEmpty::Some(uint)
+		Self::Some(uint)
 	}
 }
 
 impl From<MaybeEmpty<Uint>> for U256 {
-	fn from(maybe: MaybeEmpty<Uint>) -> U256 {
+	fn from(maybe: MaybeEmpty<Uint>) -> Self {
 		match maybe {
 			MaybeEmpty::Some(v) => v.0,
-			MaybeEmpty::None => U256::zero(),
+			MaybeEmpty::None => Self::zero(),
 		}
 	}
 }
 
 impl From<MaybeEmpty<Uint>> for u64 {
-	fn from(maybe: MaybeEmpty<Uint>) -> u64 {
+	fn from(maybe: MaybeEmpty<Uint>) -> Self {
 		match maybe {
 			MaybeEmpty::Some(v) => v.0.low_u64(),
 			MaybeEmpty::None => 0u64,
@@ -123,7 +123,7 @@ impl From<MaybeEmpty<Uint>> for u64 {
 
 impl Default for MaybeEmpty<Uint> {
 	fn default() -> Self {
-		MaybeEmpty::Some(Uint::default())
+		Self::Some(Uint::default())
 	}
 }
 

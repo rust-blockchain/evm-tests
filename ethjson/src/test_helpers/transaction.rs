@@ -40,7 +40,7 @@ pub struct TransactionTest {
 }
 
 /// TransactionTest post state.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PostState {
 	/// Transaction sender.

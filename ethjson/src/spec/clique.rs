@@ -20,7 +20,7 @@ use serde::Deserialize;
 use std::num::NonZeroU64;
 
 /// Clique params deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct CliqueParams {
 	/// period as defined in EIP 225
 	pub period: Option<u64>,
@@ -29,7 +29,7 @@ pub struct CliqueParams {
 }
 
 /// Clique engine deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct Clique {
 	/// CliqueEngine params
 	pub params: CliqueParams,

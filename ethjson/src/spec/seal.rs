@@ -24,7 +24,7 @@ use crate::{
 use serde::Deserialize;
 
 /// Ethereum seal.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct Ethereum {
@@ -35,7 +35,7 @@ pub struct Ethereum {
 }
 
 /// AuthorityRound seal.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AuthorityRoundSeal {
 	/// Seal step.
@@ -45,7 +45,7 @@ pub struct AuthorityRoundSeal {
 }
 
 /// Tendermint seal.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TendermintSeal {
 	/// Seal round.
@@ -57,7 +57,7 @@ pub struct TendermintSeal {
 }
 
 /// Seal variants.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub enum Seal {

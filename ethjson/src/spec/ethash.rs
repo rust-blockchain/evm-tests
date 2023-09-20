@@ -25,7 +25,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 
 /// Deserializable doppelganger of block rewards for EthashParams
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(untagged)]
 pub enum BlockReward {
@@ -36,7 +36,7 @@ pub enum BlockReward {
 }
 
 /// Deserializable doppelganger of EthashParams.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct EthashParams {
@@ -101,7 +101,7 @@ pub struct EthashParams {
 }
 
 /// Ethash engine deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Ethash {
 	/// Ethash params.

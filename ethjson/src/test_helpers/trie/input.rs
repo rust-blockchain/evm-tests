@@ -24,7 +24,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Trie test input.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Input {
 	/// Input params.
 	pub data: BTreeMap<Bytes, Option<Bytes>>,

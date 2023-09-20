@@ -30,7 +30,7 @@ pub struct Bytes(Vec<u8>);
 impl Bytes {
 	/// Creates bytes struct.
 	pub fn new(v: Vec<u8>) -> Self {
-		Bytes(v)
+		Self(v)
 	}
 }
 
@@ -42,7 +42,7 @@ impl From<Bytes> for Vec<u8> {
 
 impl From<Vec<u8>> for Bytes {
 	fn from(bytes: Vec<u8>) -> Self {
-		Bytes(bytes)
+		Self(bytes)
 	}
 }
 
@@ -69,7 +69,7 @@ impl FromStr for Bytes {
 			_ => FromHex::from_hex(value).unwrap_or_default(),
 		};
 
-		Ok(Bytes(v))
+		Ok(Self(v))
 	}
 }
 

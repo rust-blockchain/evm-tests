@@ -21,7 +21,7 @@ use crate::{bytes::Bytes, transaction::Transaction};
 use serde::Deserialize;
 
 /// Blockchain test block deserializer.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct Block {
 	#[serde(rename = "blockHeader")]
 	header: Option<Header>,

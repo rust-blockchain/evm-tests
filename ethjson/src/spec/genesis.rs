@@ -25,7 +25,7 @@ use crate::{
 use serde::Deserialize;
 
 /// Spec genesis.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct Genesis {

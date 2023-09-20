@@ -26,21 +26,21 @@ use std::str::FromStr;
 #[derive(Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct Uint(pub U256);
 
-impl Into<U256> for Uint {
-	fn into(self) -> U256 {
-		self.0
+impl From<Uint> for U256 {
+	fn from(val: Uint) -> Self {
+		val.0
 	}
 }
 
-impl Into<u64> for Uint {
-	fn into(self) -> u64 {
-		self.0.low_u64()
+impl From<Uint> for u64 {
+	fn from(val: Uint) -> Self {
+		val.0.low_u64()
 	}
 }
 
-impl Into<usize> for Uint {
-	fn into(self) -> usize {
-		self.0.low_u64() as usize
+impl From<Uint> for usize {
+	fn from(val: Uint) -> Self {
+		val.0.low_u64() as Self
 	}
 }
 

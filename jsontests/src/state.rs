@@ -373,7 +373,7 @@ impl TxType {
 	/// Whether this is a legacy, access list, dynamic fee, etc transaction
 	// Taken from geth's core/types/transaction.go/UnmarshalBinary, but we only detect the transaction
 	// type rather than unmarshal the entire payload.
-	fn from_txbytes(txbytes: &[u8]) -> Self {
+	const fn from_txbytes(txbytes: &[u8]) -> Self {
 		match txbytes[0] {
 			b if b > 0x7f => Self::Legacy,
 			1 => Self::AccessList,

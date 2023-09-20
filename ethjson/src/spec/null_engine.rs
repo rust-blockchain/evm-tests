@@ -20,7 +20,7 @@ use crate::uint::Uint;
 use serde::Deserialize;
 
 /// Authority params deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct NullEngineParams {
@@ -31,7 +31,7 @@ pub struct NullEngineParams {
 }
 
 /// Null engine descriptor
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NullEngine {
 	/// Ethash params.

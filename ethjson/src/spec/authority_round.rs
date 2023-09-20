@@ -195,7 +195,7 @@ mod tests {
 		];
 		assert_eq!(
 			deserialized.params.block_gas_limit_contract_transitions,
-			Some(expected_bglc.to_vec().into_iter().collect())
+			Some(expected_bglc.iter().copied().collect())
 		);
 	}
 }

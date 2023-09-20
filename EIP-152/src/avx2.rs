@@ -38,20 +38,20 @@ macro_rules! _MM_SHUFFLE {
 /// `g1` only operates on `x` from the original g function.
 ///  ```
 /// fn portable_g1(v: &mut [u64], a: usize, b: usize, c: usize, d: usize, x: u64) {
-///		v[a] = v[a].wrapping_add(v[b]).wrapping_add(x);
-///		v[d] = (v[d] ^ v[a]).rotate_right(32);
-///		v[c] = v[c].wrapping_add(v[d]);
-///		v[b] = (v[b] ^ v[c]).rotate_right(24);
+///     v[a] = v[a].wrapping_add(v[b]).wrapping_add(x);
+///     v[d] = (v[d] ^ v[a]).rotate_right(32);
+///     v[c] = v[c].wrapping_add(v[d]);
+///     v[b] = (v[b] ^ v[c]).rotate_right(24);
 /// }
 /// ```
 ///
-/// `g2` only operates on `y` from the originial g function.
+/// `g2` only operates on `y` from the original g function.
 /// ```
 /// fn portable_g2(v: &mut [u64], a: usize, b: usize, c: usize, d: usize, y: u64) {
-///		v[a] = v[a].wrapping_add(v[b]).wrapping_add(y);
-///		v[d] = (v[d] ^ v[a]).rotate_right(16);
-///		v[c] = v[c].wrapping_add(v[d]);
-///		v[b] = (v[b] ^ v[c]).rotate_right(63);
+///     v[a] = v[a].wrapping_add(v[b]).wrapping_add(y);
+///     v[d] = (v[d] ^ v[a]).rotate_right(16);
+///     v[c] = v[c].wrapping_add(v[d]);
+///     v[b] = (v[b] ^ v[c]).rotate_right(63);
 /// }
 /// ```
 ///
@@ -62,11 +62,11 @@ macro_rules! _MM_SHUFFLE {
 /// `SIGMA` for round 1 i.e `SIGMA[0]` = `[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15]`;
 /// ```
 ///  let s = &SIGMA[0 % 10];
-/// //        a, b, c, d,    x
+/// // a, b, c, d, x
 /// g(&mut v, 0, 4, 8 , 12, m[s[0]]);
-///	g(&mut v, 1, 5, 9 , 13, m[s[2]]);
-///	g(&mut v, 2, 6, 10, 14, m[s[4]]);
-///	g(&mut v, 3, 7, 11, 15, m[s[6]]);
+/// g(&mut v, 1, 5, 9 , 13, m[s[2]]);
+/// g(&mut v, 2, 6, 10, 14, m[s[4]]);
+/// g(&mut v, 3, 7, 11, 15, m[s[6]]);
 ///
 /// let a = v[..4];
 /// let b = v[4..8];
@@ -75,10 +75,11 @@ macro_rules! _MM_SHUFFLE {
 /// let mut b0 = [m[0], m[2], m[4], m[6]];
 ///
 ///  g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
-/// // ... then contruct b0 for `g2` etc.
+/// // ... then construct b0 for `g2` etc.
 /// ```
 ///
 #[target_feature(enable = "avx2")]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe fn compress(
 	state: &mut [u64; 8],
 	message: [u64; 16],

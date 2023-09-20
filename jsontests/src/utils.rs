@@ -11,7 +11,7 @@ pub fn u256_to_h256(u: U256) -> H256 {
 
 pub fn unwrap_to_account(s: &ethjson::spec::Account) -> MemoryAccount {
 	MemoryAccount {
-		balance: s.balance.clone().unwrap().into(),
+		balance: s.balance.unwrap().into(),
 		nonce: s.nonce.unwrap().0,
 		code: s.code.clone().unwrap().into(),
 		storage: s
@@ -24,10 +24,7 @@ pub fn unwrap_to_account(s: &ethjson::spec::Account) -> MemoryAccount {
 					// If value is zero then the key is not really there
 					None
 				} else {
-					Some((
-						u256_to_h256(k.clone().into()),
-						u256_to_h256(v.clone().into()),
-					))
+					Some((u256_to_h256((*k).into()), u256_to_h256((*v).into())))
 				}
 			})
 			.collect(),
@@ -38,7 +35,7 @@ pub fn unwrap_to_state(a: &ethjson::spec::State) -> BTreeMap<H160, MemoryAccount
 	match &a.0 {
 		ethjson::spec::HashOrMap::Map(m) => m
 			.iter()
-			.map(|(k, v)| (k.clone().into(), unwrap_to_account(v)))
+			.map(|(k, v)| ((*k).into(), unwrap_to_account(v)))
 			.collect(),
 		ethjson::spec::HashOrMap::Hash(_) => panic!("Hash can not be converted."),
 	}
@@ -91,7 +88,7 @@ impl rlp::Decodable for TrieAccount {
 			_ => return Err(rlp::DecoderError::RlpIncorrectListLen),
 		};
 
-		Ok(TrieAccount {
+		Ok(Self {
 			nonce: rlp.val_at(0)?,
 			balance: rlp.val_at(1)?,
 			storage_root: rlp.val_at(2)?,
@@ -110,12 +107,12 @@ pub fn assert_valid_state(a: &ethjson::spec::State, b: &BTreeMap<H160, MemoryAcc
 		ethjson::spec::HashOrMap::Map(m) => {
 			assert_eq!(
 				&m.iter()
-					.map(|(k, v)| { (k.clone().into(), unwrap_to_account(v)) })
+					.map(|(k, v)| { ((*k).into(), unwrap_to_account(v)) })
 					.collect::<BTreeMap<_, _>>(),
 				b
 			);
 		}
-		ethjson::spec::HashOrMap::Hash(h) => assert_valid_hash(&h.clone().into(), b),
+		ethjson::spec::HashOrMap::Hash(h) => assert_valid_hash(&(*h).into(), b),
 	}
 }
 
@@ -203,7 +200,7 @@ pub mod transaction {
 		let access_list: Vec<(H160, Vec<H256>)> = tx
 			.access_list
 			.iter()
-			.map(|(a, s)| (a.0, s.into_iter().map(|h| h.0).collect()))
+			.map(|(a, s)| (a.0, s.iter().map(|h| h.0).collect()))
 			.collect();
 
 		let cost = if is_contract_creation {
