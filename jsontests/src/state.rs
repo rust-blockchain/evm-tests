@@ -306,7 +306,6 @@ fn test_run(name: &str, test: Test) {
 
 				match transaction.to {
 					ethjson::maybe::MaybeEmpty::Some(to) => {
-						let data = data;
 						let value = transaction.value.into();
 
 						let _reason = executor.transact_call(

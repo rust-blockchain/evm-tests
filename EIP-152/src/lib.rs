@@ -180,7 +180,6 @@ mod tests {
 //			),
 		];
 		for (hex, output) in vec {
-			let hex = hex;
 			let bytes: Vec<u8> = hex.from_hex().unwrap();
 
 			assert_eq!(bytes.len(), 213);
