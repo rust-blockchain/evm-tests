@@ -29,6 +29,7 @@ pub mod instant_seal;
 pub mod null_engine;
 pub mod params;
 pub mod seal;
+#[allow(clippy::module_inception)]
 pub mod spec;
 pub mod state;
 pub mod step_duration;

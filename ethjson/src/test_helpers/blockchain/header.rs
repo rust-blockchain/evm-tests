@@ -24,7 +24,7 @@ use crate::{
 use serde::Deserialize;
 
 /// Blockchain test header deserializer.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Header {
 	/// Blocks bloom.

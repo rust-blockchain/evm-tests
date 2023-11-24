@@ -33,18 +33,13 @@ pub use self::header::Header;
 pub type Test = super::tester::GenericTester<String, BlockChain>;
 
 /// Json Block test possible engine kind.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Deserialize)]
 pub enum Engine {
 	/// Default (old) behaviour.
+	#[default]
 	Ethash,
 	/// No check of block's difficulty and nonce for tests.
 	NoProof,
-}
-
-impl Default for Engine {
-	fn default() -> Self {
-		Engine::Ethash
-	}
 }
 
 /// Blockchain deserialization.
@@ -85,17 +80,17 @@ impl BlockChain {
 	pub fn genesis(&self) -> Genesis {
 		Genesis {
 			seal: Seal::Ethereum(Ethereum {
-				nonce: self.genesis_block.nonce.clone(),
-				mix_hash: self.genesis_block.mix_hash.clone(),
+				nonce: self.genesis_block.nonce,
+				mix_hash: self.genesis_block.mix_hash,
 			}),
 			difficulty: self.genesis_block.difficulty,
-			author: Some(self.genesis_block.author.clone()),
+			author: Some(self.genesis_block.author),
 			timestamp: Some(self.genesis_block.timestamp),
-			parent_hash: Some(self.genesis_block.parent_hash.clone()),
+			parent_hash: Some(self.genesis_block.parent_hash),
 			gas_limit: self.genesis_block.gas_limit,
-			transactions_root: Some(self.genesis_block.transactions_root.clone()),
-			receipts_root: Some(self.genesis_block.receipts_root.clone()),
-			state_root: Some(self.genesis_block.state_root.clone()),
+			transactions_root: Some(self.genesis_block.transactions_root),
+			receipts_root: Some(self.genesis_block.receipts_root),
+			state_root: Some(self.genesis_block.state_root),
 			gas_used: Some(self.genesis_block.gas_used),
 			extra_data: Some(self.genesis_block.extra_data.clone()),
 		}

@@ -52,9 +52,9 @@ pub fn compress(state: &mut [u64; 8], message: [u64; 16], count: [u64; 2], f: bo
 	#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 	{
 		if is_x86_feature_detected!("avx2") {
-			unsafe { return avx2::compress(state, message, count, f, rounds) }
+			unsafe { avx2::compress(state, message, count, f, rounds) }
 		} else {
-			return portable::compress(state, message, count, f, rounds);
+			portable::compress(state, message, count, f, rounds);
 		};
 	}
 
@@ -120,20 +120,20 @@ mod tests {
 		portable::compress(&mut h_in, m, c, f, rounds);
 		assert_eq!(h_in, h_out);
 
-		let mut h_in = [
-			0x6a09e667f2bdc948_u64,
-			0xbb67ae8584caa73b_u64,
-			0x3c6ef372fe94f82b_u64,
-			0xa54ff53a5f1d36f1_u64,
-			0x510e527fade682d1_u64,
-			0x9b05688c2b3e6c1f_u64,
-			0x1f83d9abfb41bd6b_u64,
-			0x5be0cd19137e2179_u64,
-		];
-
 		// avx
 		#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 		{
+			let mut h_in = [
+				0x6a09e667f2bdc948_u64,
+				0xbb67ae8584caa73b_u64,
+				0x3c6ef372fe94f82b_u64,
+				0xa54ff53a5f1d36f1_u64,
+				0x510e527fade682d1_u64,
+				0x9b05688c2b3e6c1f_u64,
+				0x1f83d9abfb41bd6b_u64,
+				0x5be0cd19137e2179_u64,
+			];
+
 			if is_x86_feature_detected!("avx2") {
 				unsafe {
 					avx2::compress(&mut h_in, m, c, f, rounds);
@@ -180,7 +180,6 @@ mod tests {
 //			),
 		];
 		for (hex, output) in vec {
-			let hex = hex;
 			let bytes: Vec<u8> = hex.from_hex().unwrap();
 
 			assert_eq!(bytes.len(), 213);

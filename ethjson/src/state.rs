@@ -23,7 +23,7 @@ use crate::{
 use serde::Deserialize;
 
 /// State log deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct Log {
 	/// Address.
 	pub address: Address,

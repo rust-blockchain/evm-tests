@@ -30,16 +30,16 @@ impl Test {
 		});
 
 		MemoryVicinity {
-			gas_price: self.0.transaction.gas_price.clone().into(),
-			origin: self.0.transaction.origin.clone().into(),
+			gas_price: self.0.transaction.gas_price.into(),
+			origin: self.0.transaction.origin.into(),
 			block_hashes: Vec::new(),
-			block_number: self.0.env.number.clone().into(),
-			block_coinbase: self.0.env.author.clone().into(),
-			block_timestamp: self.0.env.timestamp.clone().into(),
-			block_difficulty: self.0.env.difficulty.clone().into(),
-			block_gas_limit: self.0.env.gas_limit.clone().into(),
+			block_number: self.0.env.number.into(),
+			block_coinbase: self.0.env.author.into(),
+			block_timestamp: self.0.env.timestamp.into(),
+			block_difficulty: self.0.env.difficulty.into(),
+			block_gas_limit: self.0.env.gas_limit.into(),
 			chain_id: U256::zero(),
-			block_base_fee_per_gas: self.0.transaction.gas_price.clone().into(),
+			block_base_fee_per_gas: self.0.transaction.gas_price.into(),
 			block_randomness,
 		}
 	}
@@ -54,9 +54,9 @@ impl Test {
 
 	pub fn unwrap_to_context(&self) -> evm::Context {
 		evm::Context {
-			address: self.0.transaction.address.clone().into(),
-			caller: self.0.transaction.sender.clone().into(),
-			apparent_value: self.0.transaction.value.clone().into(),
+			address: self.0.transaction.address.into(),
+			caller: self.0.transaction.sender.into(),
+			apparent_value: self.0.transaction.value.into(),
 		}
 	}
 
@@ -65,11 +65,11 @@ impl Test {
 	}
 
 	pub fn unwrap_to_gas_limit(&self) -> u64 {
-		self.0.transaction.gas.clone().into()
+		self.0.transaction.gas.into()
 	}
 
 	pub fn unwrap_to_post_gas(&self) -> u64 {
-		self.0.gas_left.clone().unwrap().into()
+		self.0.gas_left.unwrap().into()
 	}
 }
 
@@ -82,7 +82,7 @@ pub fn test(name: &str, test: Test) {
 	let config = Config::frontier();
 	let mut backend = MemoryBackend::new(&vicinity, original_state);
 	let metadata = StackSubstateMetadata::new(test.unwrap_to_gas_limit(), &config);
-	let state = MemoryStackState::new(metadata, &mut backend);
+	let state = MemoryStackState::new(metadata, &backend);
 	let precompile = BTreeMap::new();
 	let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompile);
 
@@ -102,8 +102,6 @@ pub fn test(name: &str, test: Test) {
 
 		assert!(!reason.is_succeed());
 		assert!(test.0.post_state.is_none() && test.0.gas_left.is_none());
-
-		println!("succeed");
 	} else {
 		let expected_post_gas = test.unwrap_to_post_gas();
 		print!("{:?} ", reason);
@@ -112,8 +110,9 @@ pub fn test(name: &str, test: Test) {
 			runtime.machine().return_value(),
 			test.unwrap_to_return_value()
 		);
-		assert_valid_state(test.0.post_state.as_ref().unwrap(), &backend.state());
+		assert_valid_state(test.0.post_state.as_ref().unwrap(), backend.state());
 		assert_eq!(gas, expected_post_gas);
-		println!("succeed");
 	}
+
+	println!("succeed");
 }

@@ -45,7 +45,7 @@ pub struct Account {
 
 impl Account {
 	/// Returns true if account does not have nonce, balance, code and storage.
-	pub fn is_empty(&self) -> bool {
+	pub const fn is_empty(&self) -> bool {
 		self.balance.is_none()
 			&& self.nonce.is_none()
 			&& self.code.is_none()

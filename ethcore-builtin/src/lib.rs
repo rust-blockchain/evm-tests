@@ -23,7 +23,6 @@ use std::{
 	collections::BTreeMap,
 	convert::{TryFrom, TryInto},
 	io::{self, Cursor, Read},
-	mem::size_of,
 	str::FromStr,
 };
 
@@ -88,15 +87,15 @@ enum Pricing {
 impl Pricer for Pricing {
 	fn cost(&self, input: &[u8]) -> U256 {
 		match self {
-			Pricing::AltBn128Pairing(inner) => inner.cost(input),
-			Pricing::AltBn128ConstOperations(inner) => inner.cost(input),
-			Pricing::Blake2F(inner) => inner.cost(input),
-			Pricing::Linear(inner) => inner.cost(input),
-			Pricing::Modexp(inner) => inner.cost(input),
-			Pricing::Bls12Pairing(inner) => inner.cost(input),
-			Pricing::Bls12ConstOperations(inner) => inner.cost(input),
-			Pricing::Bls12MultiexpG1(inner) => inner.cost(input),
-			Pricing::Bls12MultiexpG2(inner) => inner.cost(input),
+			Self::AltBn128Pairing(inner) => inner.cost(input),
+			Self::AltBn128ConstOperations(inner) => inner.cost(input),
+			Self::Blake2F(inner) => inner.cost(input),
+			Self::Linear(inner) => inner.cost(input),
+			Self::Modexp(inner) => inner.cost(input),
+			Self::Bls12Pairing(inner) => inner.cost(input),
+			Self::Bls12ConstOperations(inner) => inner.cost(input),
+			Self::Bls12MultiexpG1(inner) => inner.cost(input),
+			Self::Bls12MultiexpG2(inner) => inner.cost(input),
 		}
 	}
 }
@@ -180,7 +179,7 @@ impl ModexpPricer {
 		}
 	}
 
-	fn mult_complexity(x: u64) -> u64 {
+	const fn mult_complexity(x: u64) -> u64 {
 		match x {
 			x if x <= 64 => x * x,
 			x if x <= 1024 => (x * x) / 4 + 96 * x - 3072,
@@ -254,7 +253,7 @@ impl ModexpPricer {
 		if overflow {
 			return U256::max_value();
 		}
-		(gas / divisor as u64).into()
+		(gas / divisor).into()
 	}
 
 	fn eip_2565_mul_complexity(base_length: U256, modulus_length: U256) -> U256 {
@@ -587,13 +586,13 @@ impl From<ethjson::spec::builtin::Pricing> for Pricing {
 	fn from(pricing: ethjson::spec::builtin::Pricing) -> Self {
 		match pricing {
 			ethjson::spec::builtin::Pricing::Blake2F { gas_per_round } => {
-				Pricing::Blake2F(gas_per_round)
+				Self::Blake2F(gas_per_round)
 			}
-			ethjson::spec::builtin::Pricing::Linear(linear) => Pricing::Linear(Linear {
+			ethjson::spec::builtin::Pricing::Linear(linear) => Self::Linear(Linear {
 				base: linear.base,
 				word: linear.word,
 			}),
-			ethjson::spec::builtin::Pricing::Modexp(exp) => Pricing::Modexp(ModexpPricer {
+			ethjson::spec::builtin::Pricing::Modexp(exp) => Self::Modexp(ModexpPricer {
 				divisor: if exp.divisor == 0 {
 					warn!(target: "builtin", "Zero modexp divisor specified. Falling back to default: 10.");
 					10
@@ -603,7 +602,7 @@ impl From<ethjson::spec::builtin::Pricing> for Pricing {
 				is_eip_2565: exp.is_eip_2565,
 			}),
 			ethjson::spec::builtin::Pricing::AltBn128Pairing(pricer) => {
-				Pricing::AltBn128Pairing(AltBn128PairingPricer {
+				Self::AltBn128Pairing(AltBn128PairingPricer {
 					price: AltBn128PairingPrice {
 						base: pricer.base,
 						pair: pricer.pair,
@@ -611,17 +610,17 @@ impl From<ethjson::spec::builtin::Pricing> for Pricing {
 				})
 			}
 			ethjson::spec::builtin::Pricing::AltBn128ConstOperations(pricer) => {
-				Pricing::AltBn128ConstOperations(AltBn128ConstOperations {
+				Self::AltBn128ConstOperations(AltBn128ConstOperations {
 					price: pricer.price,
 				})
 			}
 			ethjson::spec::builtin::Pricing::Bls12ConstOperations(pricer) => {
-				Pricing::Bls12ConstOperations(Bls12ConstOperations {
+				Self::Bls12ConstOperations(Bls12ConstOperations {
 					price: pricer.price,
 				})
 			}
 			ethjson::spec::builtin::Pricing::Bls12Pairing(pricer) => {
-				Pricing::Bls12Pairing(Bls12PairingPricer {
+				Self::Bls12Pairing(Bls12PairingPricer {
 					price: Bls12PairingPrice {
 						base: pricer.base,
 						pair: pricer.pair,
@@ -629,13 +628,13 @@ impl From<ethjson::spec::builtin::Pricing> for Pricing {
 				})
 			}
 			ethjson::spec::builtin::Pricing::Bls12G1Multiexp(pricer) => {
-				Pricing::Bls12MultiexpG1(Bls12MultiexpPricerG1 {
+				Self::Bls12MultiexpG1(Bls12MultiexpPricerG1 {
 					base_price: Bls12ConstOperations { price: pricer.base },
 					_marker: std::marker::PhantomData,
 				})
 			}
 			ethjson::spec::builtin::Pricing::Bls12G2Multiexp(pricer) => {
-				Pricing::Bls12MultiexpG2(Bls12MultiexpPricerG2 {
+				Self::Bls12MultiexpG2(Bls12MultiexpPricerG2 {
 					base_price: Bls12ConstOperations { price: pricer.base },
 					_marker: std::marker::PhantomData,
 				})
@@ -687,27 +686,27 @@ enum EthereumBuiltin {
 impl FromStr for EthereumBuiltin {
 	type Err = ();
 
-	fn from_str(name: &str) -> Result<EthereumBuiltin, Self::Err> {
+	fn from_str(name: &str) -> Result<Self, Self::Err> {
 		match name {
-			"identity" => Ok(EthereumBuiltin::Identity(Identity)),
-			"ecrecover" => Ok(EthereumBuiltin::EcRecover(EcRecover)),
-			"sha256" => Ok(EthereumBuiltin::Sha256(Sha256)),
-			"ripemd160" => Ok(EthereumBuiltin::Ripemd160(Ripemd160)),
-			"modexp" => Ok(EthereumBuiltin::Modexp(Modexp)),
-			"alt_bn128_add" => Ok(EthereumBuiltin::Bn128Add(Bn128Add)),
-			"alt_bn128_mul" => Ok(EthereumBuiltin::Bn128Mul(Bn128Mul)),
-			"alt_bn128_pairing" => Ok(EthereumBuiltin::Bn128Pairing(Bn128Pairing)),
-			"blake2_f" => Ok(EthereumBuiltin::Blake2F(Blake2F)),
-			"bls12_381_g1_add" => Ok(EthereumBuiltin::Bls12G1Add(Bls12G1Add)),
-			"bls12_381_g1_mul" => Ok(EthereumBuiltin::Bls12G1Mul(Bls12G1Mul)),
-			"bls12_381_g1_multiexp" => Ok(EthereumBuiltin::Bls12G1MultiExp(Bls12G1MultiExp)),
-			"bls12_381_g2_add" => Ok(EthereumBuiltin::Bls12G2Add(Bls12G2Add)),
-			"bls12_381_g2_mul" => Ok(EthereumBuiltin::Bls12G2Mul(Bls12G2Mul)),
-			"bls12_381_g2_multiexp" => Ok(EthereumBuiltin::Bls12G2MultiExp(Bls12G2MultiExp)),
-			"bls12_381_pairing" => Ok(EthereumBuiltin::Bls12Pairing(Bls12Pairing)),
-			"bls12_381_fp_to_g1" => Ok(EthereumBuiltin::Bls12MapFpToG1(Bls12MapFpToG1)),
-			"bls12_381_fp2_to_g2" => Ok(EthereumBuiltin::Bls12MapFp2ToG2(Bls12MapFp2ToG2)),
-			_ => return Err(()),
+			"identity" => Ok(Self::Identity(Identity)),
+			"ecrecover" => Ok(Self::EcRecover(EcRecover)),
+			"sha256" => Ok(Self::Sha256(Sha256)),
+			"ripemd160" => Ok(Self::Ripemd160(Ripemd160)),
+			"modexp" => Ok(Self::Modexp(Modexp)),
+			"alt_bn128_add" => Ok(Self::Bn128Add(Bn128Add)),
+			"alt_bn128_mul" => Ok(Self::Bn128Mul(Bn128Mul)),
+			"alt_bn128_pairing" => Ok(Self::Bn128Pairing(Bn128Pairing)),
+			"blake2_f" => Ok(Self::Blake2F(Blake2F)),
+			"bls12_381_g1_add" => Ok(Self::Bls12G1Add(Bls12G1Add)),
+			"bls12_381_g1_mul" => Ok(Self::Bls12G1Mul(Bls12G1Mul)),
+			"bls12_381_g1_multiexp" => Ok(Self::Bls12G1MultiExp(Bls12G1MultiExp)),
+			"bls12_381_g2_add" => Ok(Self::Bls12G2Add(Bls12G2Add)),
+			"bls12_381_g2_mul" => Ok(Self::Bls12G2Mul(Bls12G2Mul)),
+			"bls12_381_g2_multiexp" => Ok(Self::Bls12G2MultiExp(Bls12G2MultiExp)),
+			"bls12_381_pairing" => Ok(Self::Bls12Pairing(Bls12Pairing)),
+			"bls12_381_fp_to_g1" => Ok(Self::Bls12MapFpToG1(Bls12MapFpToG1)),
+			"bls12_381_fp2_to_g2" => Ok(Self::Bls12MapFp2ToG2(Bls12MapFp2ToG2)),
+			_ => Err(()),
 		}
 	}
 }
@@ -715,24 +714,24 @@ impl FromStr for EthereumBuiltin {
 impl Implementation for EthereumBuiltin {
 	fn execute(&self, input: &[u8], output: &mut BytesRef) -> Result<(), &'static str> {
 		match self {
-			EthereumBuiltin::Identity(inner) => inner.execute(input, output),
-			EthereumBuiltin::EcRecover(inner) => inner.execute(input, output),
-			EthereumBuiltin::Sha256(inner) => inner.execute(input, output),
-			EthereumBuiltin::Ripemd160(inner) => inner.execute(input, output),
-			EthereumBuiltin::Modexp(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bn128Add(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bn128Mul(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bn128Pairing(inner) => inner.execute(input, output),
-			EthereumBuiltin::Blake2F(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12G1Add(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12G1Mul(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12G1MultiExp(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12G2Add(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12G2Mul(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12G2MultiExp(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12Pairing(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12MapFpToG1(inner) => inner.execute(input, output),
-			EthereumBuiltin::Bls12MapFp2ToG2(inner) => inner.execute(input, output),
+			Self::Identity(inner) => inner.execute(input, output),
+			Self::EcRecover(inner) => inner.execute(input, output),
+			Self::Sha256(inner) => inner.execute(input, output),
+			Self::Ripemd160(inner) => inner.execute(input, output),
+			Self::Modexp(inner) => inner.execute(input, output),
+			Self::Bn128Add(inner) => inner.execute(input, output),
+			Self::Bn128Mul(inner) => inner.execute(input, output),
+			Self::Bn128Pairing(inner) => inner.execute(input, output),
+			Self::Blake2F(inner) => inner.execute(input, output),
+			Self::Bls12G1Add(inner) => inner.execute(input, output),
+			Self::Bls12G1Mul(inner) => inner.execute(input, output),
+			Self::Bls12G1MultiExp(inner) => inner.execute(input, output),
+			Self::Bls12G2Add(inner) => inner.execute(input, output),
+			Self::Bls12G2Mul(inner) => inner.execute(input, output),
+			Self::Bls12G2MultiExp(inner) => inner.execute(input, output),
+			Self::Bls12Pairing(inner) => inner.execute(input, output),
+			Self::Bls12MapFpToG1(inner) => inner.execute(input, output),
+			Self::Bls12MapFp2ToG2(inner) => inner.execute(input, output),
 		}
 	}
 }
@@ -836,19 +835,21 @@ impl Implementation for EcRecover {
 		let mut signature = [0; 64];
 		signature[..64].copy_from_slice(&input[64..128]);
 		let signature = libsecp256k1::Signature::parse_standard(&signature);
-		if bit <= 1 && signature.is_ok() {
-			// The builtin allows/requires all-zero messages to be valid to
-			// recover the public key. Use of such messages is disallowed in
-			// `rust-secp256k1` and this is a workaround for that. It is not an
-			// openethereum-level error to fail here; instead we return all
-			// zeroes and let the caller interpret that outcome.
-			let message = libsecp256k1::Message::parse(&hash);
-			let recovery_id = libsecp256k1::RecoveryId::parse(bit);
-			if let Ok(recovery_id) = recovery_id {
-				if let Ok(p) = libsecp256k1::recover(&message, &signature.unwrap(), &recovery_id) {
-					let r = keccak(&p.serialize()[1..65]);
-					output.write(0, &[0; 12]);
-					output.write(12, &r.as_bytes()[12..]);
+		if bit <= 1 {
+			if let Ok(signature) = signature {
+				// The builtin allows/requires all-zero messages to be valid to
+				// recover the public key. Use of such messages is disallowed in
+				// `rust-secp256k1` and this is a workaround for that. It is not an
+				// openethereum-level error to fail here; instead we return all
+				// zeroes and let the caller interpret that outcome.
+				let message = libsecp256k1::Message::parse(&hash);
+				let recovery_id = libsecp256k1::RecoveryId::parse(bit);
+				if let Ok(recovery_id) = recovery_id {
+					if let Ok(p) = libsecp256k1::recover(&message, &signature, &recovery_id) {
+						let r = keccak(&p.serialize()[1..65]);
+						output.write(0, &[0; 12]);
+						output.write(12, &r.as_bytes()[12..]);
+					}
 				}
 			}
 		}
@@ -911,7 +912,7 @@ impl Implementation for Blake2F {
 
 		compress(&mut h, m, t, f, rounds as usize);
 
-		let mut output_buf = [0u8; 8 * size_of::<u64>()];
+		let mut output_buf = [0u8; u64::BITS as usize];
 		for (i, state_word) in h.iter().enumerate() {
 			output_buf[i * 8..(i + 1) * 8].copy_from_slice(&state_word.to_le_bytes());
 		}
@@ -1812,7 +1813,7 @@ mod tests {
 				1111111111111111111111111111111111111111111111111111111111111111"
 			);
 
-			let mut output = vec![0u8; 64];
+			let mut output = [0u8; 64];
 
 			let res = f.execute(&input[..], &mut BytesRef::Fixed(&mut output[..]));
 			assert!(res.is_err(), "There should be built-in error here");
@@ -1856,7 +1857,7 @@ mod tests {
 				0f00000000000000000000000000000000000000000000000000000000000000"
 			);
 
-			let mut output = vec![0u8; 64];
+			let mut output = [0u8; 64];
 
 			let res = f.execute(&input[..], &mut BytesRef::Fixed(&mut output[..]));
 			assert!(res.is_err(), "There should be built-in error here");
@@ -1882,20 +1883,23 @@ mod tests {
 	}
 
 	fn error_test(f: Builtin, input: &[u8], msg_contains: Option<&str>) {
-		let mut output = vec![0u8; 64];
+		let mut output = [0u8; 64];
 		let res = f.execute(input, &mut BytesRef::Fixed(&mut output[..]));
-		if let Some(msg) = msg_contains {
-			if let Err(e) = res {
-				if !e.contains(msg) {
-					panic!(
-						"There should be error containing '{}' here, but got: '{}'",
-						msg, e
-					);
+		msg_contains.map_or_else(
+			|| {
+				assert!(res.is_err(), "There should be built-in error here");
+			},
+			|msg| {
+				if let Err(e) = res {
+					if !e.contains(msg) {
+						panic!(
+							"There should be error containing '{}' here, but got: '{}'",
+							msg, e
+						);
+					}
 				}
-			}
-		} else {
-			assert!(res.is_err(), "There should be built-in error here");
-		}
+			},
+		)
 	}
 
 	#[test]

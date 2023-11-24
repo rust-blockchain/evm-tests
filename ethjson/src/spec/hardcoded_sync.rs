@@ -20,7 +20,7 @@ use crate::{bytes::Bytes, hash::H256, uint::Uint};
 use serde::Deserialize;
 
 /// Spec hardcoded sync.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct HardcodedSync {

@@ -54,13 +54,13 @@ pub struct Vm {
 
 impl Vm {
 	/// Returns true if transaction execution run out of gas.
-	pub fn out_of_gas(&self) -> bool {
+	pub const fn out_of_gas(&self) -> bool {
 		self.calls.is_none()
 	}
 }
 
 /// Call deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Call {
 	/// Call data.
@@ -74,7 +74,7 @@ pub struct Call {
 }
 
 /// Executed transaction.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
 	/// Contract address.
@@ -100,7 +100,7 @@ pub struct Transaction {
 }
 
 /// Environment.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct Env {
 	/// Address.
 	#[serde(rename = "currentCoinbase")]

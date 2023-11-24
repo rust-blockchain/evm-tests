@@ -85,7 +85,7 @@ mod tests {
 				assert!(map.contains_key(&Uint(U256::from(10))));
 				assert!(map.contains_key(&Uint(U256::from(20))));
 			}
-			_ => assert!(false),
+			_ => panic!(),
 		}
 	}
 }

@@ -1,7 +1,7 @@
 [submodule "evm"]
 	path = evm
-	url = https://github.com/rust-blockchain/evm
+	url = https://github.com/aurora-is-near/sputnikvm
 [submodule "jsontests/res/ethtests"]
 	path = jsontests/res/ethtests
 	url = https://github.com/ethereum/tests
-	tag = 9.0.5
+	tag = v12.3

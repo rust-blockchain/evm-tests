@@ -38,20 +38,20 @@ macro_rules! _MM_SHUFFLE {
 /// `g1` only operates on `x` from the original g function.
 ///  ```
 /// fn portable_g1(v: &mut [u64], a: usize, b: usize, c: usize, d: usize, x: u64) {
-///		v[a] = v[a].wrapping_add(v[b]).wrapping_add(x);
-///		v[d] = (v[d] ^ v[a]).rotate_right(32);
-///		v[c] = v[c].wrapping_add(v[d]);
-///		v[b] = (v[b] ^ v[c]).rotate_right(24);
+///     v[a] = v[a].wrapping_add(v[b]).wrapping_add(x);
+///     v[d] = (v[d] ^ v[a]).rotate_right(32);
+///     v[c] = v[c].wrapping_add(v[d]);
+///     v[b] = (v[b] ^ v[c]).rotate_right(24);
 /// }
 /// ```
 ///
-/// `g2` only operates on `y` from the originial g function.
+/// `g2` only operates on `y` from the original g function.
 /// ```
 /// fn portable_g2(v: &mut [u64], a: usize, b: usize, c: usize, d: usize, y: u64) {
-///		v[a] = v[a].wrapping_add(v[b]).wrapping_add(y);
-///		v[d] = (v[d] ^ v[a]).rotate_right(16);
-///		v[c] = v[c].wrapping_add(v[d]);
-///		v[b] = (v[b] ^ v[c]).rotate_right(63);
+///     v[a] = v[a].wrapping_add(v[b]).wrapping_add(y);
+///     v[d] = (v[d] ^ v[a]).rotate_right(16);
+///     v[c] = v[c].wrapping_add(v[d]);
+///     v[b] = (v[b] ^ v[c]).rotate_right(63);
 /// }
 /// ```
 ///
@@ -62,11 +62,11 @@ macro_rules! _MM_SHUFFLE {
 /// `SIGMA` for round 1 i.e `SIGMA[0]` = `[ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15]`;
 /// ```
 ///  let s = &SIGMA[0 % 10];
-/// //        a, b, c, d,    x
+/// // a, b, c, d, x
 /// g(&mut v, 0, 4, 8 , 12, m[s[0]]);
-///	g(&mut v, 1, 5, 9 , 13, m[s[2]]);
-///	g(&mut v, 2, 6, 10, 14, m[s[4]]);
-///	g(&mut v, 3, 7, 11, 15, m[s[6]]);
+/// g(&mut v, 1, 5, 9 , 13, m[s[2]]);
+/// g(&mut v, 2, 6, 10, 14, m[s[4]]);
+/// g(&mut v, 3, 7, 11, 15, m[s[6]]);
 ///
 /// let a = v[..4];
 /// let b = v[4..8];
@@ -74,11 +74,12 @@ macro_rules! _MM_SHUFFLE {
 /// let d = v[12..16];
 /// let mut b0 = [m[0], m[2], m[4], m[6]];
 ///
-///  g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
-/// // ... then contruct b0 for `g2` etc.
+///  g1(&mut a, &mut b, &mut c, &mut d, &b0);
+/// // ... then construct b0 for `g2` etc.
 /// ```
 ///
 #[target_feature(enable = "avx2")]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe fn compress(
 	state: &mut [u64; 8],
 	message: [u64; 16],
@@ -137,40 +138,40 @@ pub unsafe fn compress(
 				t0 = _mm256_unpacklo_epi64(m0, m1); // ([0, 1, 0, 1], [2, 3, 2, 3]) = [0, 2, 0, 2]
 				t1 = _mm256_unpacklo_epi64(m2, m3); // ([4, 5, 4, 5], [6, 7, 6, 7]) = [4, 6, 4, 6]
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0); // ([0, 2, 0, 2], [4, 6, 4, 6]) = [0, 2, 4, 6]
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m0, m1); // ([0, 1, 0, 1], [2, 3, 2, 3]) = [1, 3, 1, 3]
 				t1 = _mm256_unpackhi_epi64(m2, m3); // ([4, 5, 4, 5], [6, 7, 6, 7]) = [5, 7, 5, 7]
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0); // ([1, 3, 1, 3], [5, 7, 5, 7]) = [1, 3, 5, 7]
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_unpacklo_epi64(m7, m4); // ([14, 15, 14, 15], [8, 9, 8, 9]) = [14, 8, 14, 8]
 				t1 = _mm256_unpacklo_epi64(m5, m6); // ([10, 11, 10, 11], [12, 13, 12, 13]) = [10, 12, 10, 12]
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0); // ([14, 8, 14, 8], [10, 12, 10, 12]) = [14, 8, 10, 12]
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m7, m4); // ([14, 15, 14, 15], [8, 9, 8, 9]) = [15, 9, 15, 9]
 				t1 = _mm256_unpackhi_epi64(m5, m6); // ([10, 11, 10, 11], [12, 13, 12, 13]) = [11, 13, 11, 13]
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0); // ([15, 9, 15, 9], [11, 13, 11, 13]) = [15, 9, 11, 13]
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			1 => {
 				t0 = _mm256_unpacklo_epi64(m7, m2);
 				t1 = _mm256_unpackhi_epi64(m4, m6);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m5, m4);
 				t1 = _mm256_alignr_epi8(m3, m7, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_unpackhi_epi64(m2, m0);
 				t1 = _mm256_blend_epi32(m5, m0, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_alignr_epi8(m6, m1, 8);
 				t1 = _mm256_blend_epi32(m3, m1, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			2 => {
@@ -178,20 +179,20 @@ pub unsafe fn compress(
 				t0 = _mm256_alignr_epi8(m6, m5, 8);
 				t1 = _mm256_unpackhi_epi64(m2, m7);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m4, m0);
 				t1 = _mm256_blend_epi32(m6, m1, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_alignr_epi8(m5, m4, 8);
 				t1 = _mm256_unpackhi_epi64(m1, m3);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m2, m7);
 				t1 = _mm256_blend_epi32(m0, m3, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			3 => {
@@ -199,20 +200,20 @@ pub unsafe fn compress(
 				t0 = _mm256_unpackhi_epi64(m3, m1);
 				t1 = _mm256_unpackhi_epi64(m6, m5);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m4, m0);
 				t1 = _mm256_unpacklo_epi64(m6, m7);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_alignr_epi8(m1, m7, 8);
 				t1 = _mm256_shuffle_epi32(m2, _MM_SHUFFLE!(1, 0, 3, 2));
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m4, m3);
 				t1 = _mm256_unpacklo_epi64(m5, m0);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			4 => {
@@ -220,20 +221,20 @@ pub unsafe fn compress(
 				t0 = _mm256_unpackhi_epi64(m4, m2);
 				t1 = _mm256_unpacklo_epi64(m1, m5);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_blend_epi32(m3, m0, 0x33);
 				t1 = _mm256_blend_epi32(m7, m2, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_alignr_epi8(m7, m1, 8);
 				t1 = _mm256_alignr_epi8(m3, m5, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m6, m0);
 				t1 = _mm256_unpacklo_epi64(m6, m4);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			5 => {
@@ -241,20 +242,20 @@ pub unsafe fn compress(
 				t0 = _mm256_unpacklo_epi64(m1, m3);
 				t1 = _mm256_unpacklo_epi64(m0, m4);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m6, m5);
 				t1 = _mm256_unpackhi_epi64(m5, m1);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_alignr_epi8(m2, m0, 8);
 				t1 = _mm256_unpackhi_epi64(m3, m7);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m4, m6);
 				t1 = _mm256_alignr_epi8(m7, m2, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			6 => {
@@ -262,20 +263,20 @@ pub unsafe fn compress(
 				t0 = _mm256_blend_epi32(m0, m6, 0x33);
 				t1 = _mm256_unpacklo_epi64(m7, m2);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m2, m7);
 				t1 = _mm256_alignr_epi8(m5, m6, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_unpacklo_epi64(m4, m0);
 				t1 = _mm256_blend_epi32(m4, m3, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m5, m3);
 				t1 = _mm256_shuffle_epi32(m1, _MM_SHUFFLE!(1, 0, 3, 2));
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			7 => {
@@ -283,20 +284,20 @@ pub unsafe fn compress(
 				t0 = _mm256_unpackhi_epi64(m6, m3);
 				t1 = _mm256_blend_epi32(m1, m6, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_alignr_epi8(m7, m5, 8);
 				t1 = _mm256_unpackhi_epi64(m0, m4);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_blend_epi32(m2, m1, 0x33);
 				t1 = _mm256_alignr_epi8(m4, m7, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m5, m0);
 				t1 = _mm256_unpacklo_epi64(m2, m3);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			8 => {
@@ -304,20 +305,20 @@ pub unsafe fn compress(
 				t0 = _mm256_unpacklo_epi64(m3, m7);
 				t1 = _mm256_alignr_epi8(m0, m5, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpackhi_epi64(m7, m4);
 				t1 = _mm256_alignr_epi8(m4, m1, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_unpacklo_epi64(m5, m6);
 				t1 = _mm256_unpackhi_epi64(m6, m0);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_alignr_epi8(m1, m2, 8);
 				t1 = _mm256_alignr_epi8(m2, m3, 8);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 			_ => {
@@ -325,20 +326,20 @@ pub unsafe fn compress(
 				t0 = _mm256_unpacklo_epi64(m5, m4);
 				t1 = _mm256_unpackhi_epi64(m3, m0);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_unpacklo_epi64(m1, m2);
 				t1 = _mm256_blend_epi32(m2, m3, 0x33);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				diagonalize(&mut a, &mut b, &mut c, &mut d);
 				t0 = _mm256_unpackhi_epi64(m6, m7);
 				t1 = _mm256_unpackhi_epi64(m4, m1);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g1(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g1(&mut a, &mut b, &mut c, &mut d, &b0);
 				t0 = _mm256_blend_epi32(m5, m0, 0x33);
 				t1 = _mm256_unpacklo_epi64(m7, m6);
 				b0 = _mm256_blend_epi32(t0, t1, 0xF0);
-				g2(&mut a, &mut b, &mut c, &mut d, &mut b0);
+				g2(&mut a, &mut b, &mut c, &mut d, &b0);
 				undiagonalize(&mut a, &mut b, &mut c, &mut d);
 			}
 		}
@@ -414,7 +415,7 @@ unsafe fn rotate_right_63(x: __m256i) -> __m256i {
 }
 
 #[inline(always)]
-unsafe fn g1(a: &mut __m256i, b: &mut __m256i, c: &mut __m256i, d: &mut __m256i, m: &mut __m256i) {
+unsafe fn g1(a: &mut __m256i, b: &mut __m256i, c: &mut __m256i, d: &mut __m256i, m: &__m256i) {
 	*a = add(*a, *m);
 	*a = add(*a, *b);
 	*d = xor(*d, *a);
@@ -425,7 +426,7 @@ unsafe fn g1(a: &mut __m256i, b: &mut __m256i, c: &mut __m256i, d: &mut __m256i,
 }
 
 #[inline(always)]
-unsafe fn g2(a: &mut __m256i, b: &mut __m256i, c: &mut __m256i, d: &mut __m256i, m: &mut __m256i) {
+unsafe fn g2(a: &mut __m256i, b: &mut __m256i, c: &mut __m256i, d: &mut __m256i, m: &__m256i) {
 	*a = add(*a, *m);
 	*a = add(*a, *b);
 	*d = xor(*d, *a);

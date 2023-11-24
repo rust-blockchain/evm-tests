@@ -25,7 +25,7 @@ use crate::{
 use serde::Deserialize;
 
 /// Unsigned transaction with signing information deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Transaction {
 	/// Transaction data.

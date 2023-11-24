@@ -19,7 +19,7 @@
 use serde::Deserialize;
 
 /// Instant seal engine params deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct InstantSealParams {
@@ -29,7 +29,7 @@ pub struct InstantSealParams {
 }
 
 /// Instant seal engine descriptor.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InstantSeal {
 	/// Instant seal parameters.

@@ -65,12 +65,9 @@ pub enum ForkSpec {
 
 impl ForkSpec {
 	/// Returns true if the fork is at or after the merge.
-	pub fn is_eth2(&self) -> bool {
+	pub const fn is_eth2(&self) -> bool {
 		// NOTE: Include new forks in this match arm.
-		matches!(
-			*self,
-			ForkSpec::London | ForkSpec::Merge | ForkSpec::Shanghai
-		)
+		matches!(*self, Self::London | Self::Merge | Self::Shanghai)
 	}
 }
 

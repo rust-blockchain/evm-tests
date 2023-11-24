@@ -27,7 +27,7 @@ use crate::hash::H256;
 use serde::Deserialize;
 
 /// Trie test deserialization.
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct Trie {
 	/// Trie test input.
 	#[serde(rename = "in")]

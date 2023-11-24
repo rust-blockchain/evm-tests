@@ -287,7 +287,7 @@ fn test_run(name: &str, test: Test) {
 				let data: Vec<u8> = transaction.data.into();
 				let metadata =
 					StackSubstateMetadata::new(transaction.gas_limit.into(), &gasometer_config);
-				let executor_state = MemoryStackState::new(metadata, &mut backend);
+				let executor_state = MemoryStackState::new(metadata, &backend);
 				let precompile = JsonPrecompile::precompile(spec).unwrap();
 				let mut executor = StackExecutor::new_with_precompiles(
 					executor_state,
@@ -306,7 +306,6 @@ fn test_run(name: &str, test: Test) {
 
 				match transaction.to {
 					ethjson::maybe::MaybeEmpty::Some(to) => {
-						let data = data;
 						let value = transaction.value.into();
 
 						let _reason = executor.transact_call(
@@ -373,7 +372,7 @@ impl TxType {
 	/// Whether this is a legacy, access list, dynamic fee, etc transaction
 	// Taken from geth's core/types/transaction.go/UnmarshalBinary, but we only detect the transaction
 	// type rather than unmarshal the entire payload.
-	fn from_txbytes(txbytes: &[u8]) -> Self {
+	const fn from_txbytes(txbytes: &[u8]) -> Self {
 		match txbytes[0] {
 			b if b > 0x7f => Self::Legacy,
 			1 => Self::AccessList,

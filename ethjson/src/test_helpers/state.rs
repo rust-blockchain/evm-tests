@@ -48,7 +48,7 @@ pub struct State {
 }
 
 /// State test transaction deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MultiTransaction {
 	/// Transaction data set.
@@ -80,7 +80,7 @@ pub struct MultiTransaction {
 
 impl MultiTransaction {
 	/// max_priority_fee_per_gas (see EIP-1559)
-	pub fn max_priority_fee_per_gas(&self) -> U256 {
+	pub const fn max_priority_fee_per_gas(&self) -> U256 {
 		if self.max_priority_fee_per_gas.0.is_zero() {
 			self.gas_price.0
 		} else {
@@ -89,7 +89,7 @@ impl MultiTransaction {
 	}
 
 	/// max_fee_per_gas (see EIP-1559)
-	pub fn max_fee_per_gas(&self) -> U256 {
+	pub const fn max_fee_per_gas(&self) -> U256 {
 		if self.max_fee_per_gas.0.is_zero() {
 			self.gas_price.0
 		} else {
@@ -141,7 +141,7 @@ pub type AccessList = Vec<AccessListTuple>;
 
 /// Access list tuple (see https://eips.ethereum.org/EIPS/eip-2930).
 /// Example test spec: https://github.com/ethereum/tests/blob/5490db3ff58d371c0c74826280256ba016b0bd5c/GeneralStateTests/stExample/accessListExample.json
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AccessListTuple {
 	/// Address to access
@@ -151,7 +151,7 @@ pub struct AccessListTuple {
 }
 
 /// State test indexes deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct PostStateIndexes {
 	/// Index into transaction data set.
 	pub data: u64,
@@ -162,7 +162,7 @@ pub struct PostStateIndexes {
 }
 
 /// State test indexed state result deserialization.
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostStateResult {
 	/// Post state hash
